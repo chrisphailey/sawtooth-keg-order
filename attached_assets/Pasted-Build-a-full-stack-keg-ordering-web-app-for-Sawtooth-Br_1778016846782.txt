@@ -1,0 +1,152 @@
+Build a full-stack keg ordering web app for Sawtooth Brewery with a public customer form that can be embedded on their existing website and a protected admin dashboard.
+
+Core workflow:
+Customer fills out the keg request form, selects keg options, enters payment details, and submits. The payment should NOT be captured immediately. Use Clover payment authorization/pre-auth so the funds are held first. After submission, the request appears in the admin dashboard with a “Confirm & Capture Payment” button.
+
+When staff clicks “Confirm & Capture Payment”:
+1. Capture the Clover authorized payment.
+2. Mark the order as confirmed/paid.
+3. Add the order to the pickup schedule.
+4. Add the pickup to a calendar view.
+5. Make the customer/order detail page available with links to pickup forms.
+
+Customer-facing order form:
+- Name
+- Email
+- Phone
+- Pickup date
+- Pickup time
+- Beer/keg selection
+- Keg size
+- Quantity
+- $30 keg deposit automatically added
+- Party tap needed: yes/no
+- CO2 needed: yes/no
+- Notes/special requests
+- Payment entry through Clover
+
+Admin beer/keg management:
+- Admin can add/edit/delete beer options.
+- Each beer option has:
+  - Beer name
+  - Keg size
+  - Price
+  - Availability status
+  - Notes
+- Customer form should pull keg options from this admin-managed list.
+
+Payment requirements:
+- Integrate Clover using environment variables.
+- Authorize payment at checkout.
+- Do not capture payment until staff confirms.
+- Store Clover authorization ID, payment status, amount, timestamp, and customer/order relationship.
+- Include idempotency keys for Clover payment requests.
+- If payment capture fails, show an error in the admin dashboard and do not mark the order as paid.
+
+Pickup requirements:
+At pickup, staff collects:
+- Valid ID
+- Date of birth
+- Customer signature
+- Idaho keg receipt form information
+
+Pickup detail page:
+Each order/customer should have a detail page that includes:
+- Customer info
+- Order info
+- Payment status
+- Pickup date/time
+- Beer/keg details
+- Button/link to complete ID verification
+- Button/link to complete/sign Idaho keg receipt form
+- Button/link to view/download signed receipt PDF
+
+Idaho keg receipt form:
+Create a digital version of the “Receipt for Sale of Beer in Kegs to Unlicensed Group or Individual” form.
+
+The form should collect:
+- Date of sale
+- Date of equipment return
+- Phone number
+- Name of purchaser
+- Date of birth
+- Location, time, and date where beverage will be consumed
+- Valid ID number
+- Vehicle year
+- Vehicle make
+- Vehicle color
+- Vehicle plate number
+- Customer signature
+- Staff name
+- Trade name: Sawtooth Brewery
+- Draft system and number
+- Whether CO2 tank is needed
+- CO2 regulator number
+- Trash can numbers
+- Keg brand and size
+- Keg identification numbers
+
+Include the legal certification and warning language from the Idaho keg receipt form. The customer copy must be printable/downloadable as a PDF.
+
+Admin calendar:
+- Monthly, weekly, and daily calendar view if practical.
+- Each confirmed pickup appears on the correct date and time.
+- Calendar item should show:
+  - Customer name
+  - Pickup time
+  - Beer/keg type
+  - Quantity
+- Clicking a calendar item opens that customer/order detail page.
+
+Website embedding requirement:
+The customer-facing keg order form should be easy to embed on the existing Sawtooth Brewery website.
+
+Build it so the form can be used in one or more of these ways:
+1. As a standalone public URL, such as /keg-order
+2. As an embeddable iframe that can be placed on their current website
+3. With mobile-friendly styling so it looks good inside an embedded page
+
+The admin dashboard should NOT be embeddable or public. It should require login and live at a protected route like /admin.
+
+At the end, provide simple embed instructions, including an example iframe code snippet.
+
+Database:
+Use PostgreSQL with tables for:
+- admins/users
+- beer_options
+- keg_orders
+- payment_authorizations
+- pickup_schedule
+- keg_receipt_forms
+- signatures
+
+Tech stack:
+- React frontend
+- Node/Express backend
+- PostgreSQL
+- Prisma ORM
+- Tailwind CSS
+- Clover API integration
+- Simple admin login
+
+Routes:
+- /keg-order — public customer order form
+- /admin — protected admin dashboard
+- /admin/beers — manage beer/keg options
+- /admin/orders — review pending requests
+- /admin/calendar — pickup calendar
+- /admin/orders/:id — customer/order detail page
+- /pickup/:orderId/forms — pickup forms/signature page, protected or staff-accessible
+
+Important MVP constraints:
+- Do not build notifications yet.
+- Do not overcomplicate the admin status flow.
+- ID and signature are collected at pickup, not during the initial customer checkout.
+- Focus on:
+  1. Customer order form
+  2. Clover authorization hold
+  3. Admin confirm button
+  4. Payment capture
+  5. Pickup calendar
+  6. Order detail page
+  7. Signed keg receipt form links/PDF

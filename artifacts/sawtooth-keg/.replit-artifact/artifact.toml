@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Sawtooth Brewery Keg Ordering"
+version = "1.0.0"
+id = "artifacts/sawtooth-keg"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24077
+
+[services.development]
+run = "pnpm --filter @workspace/sawtooth-keg run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/sawtooth-keg", "run", "build" ]
+publicDir = "artifacts/sawtooth-keg/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24077"
+BASE_PATH = "/"

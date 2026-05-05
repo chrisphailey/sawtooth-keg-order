@@ -3,20 +3,32 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Sawtooth Brewery Keg Ordering API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: beers
+    description: Beer/keg option management
+  - name: orders
+    description: Keg orders
+  - name: payments
+    description: Payment authorizations
+  - name: pickup
+    description: Pickup schedule
+  - name: receipts
+    description: Idaho keg receipt forms
+  - name: dashboard
+    description: Admin dashboard summaries
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +36,463 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # Beer options
+  /beers:
+    get:
+      operationId: listBeers
+      tags: [beers]
+      summary: List all beer/keg options
+      parameters:
+        - name: availableOnly
+          in: query
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: List of beer options
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Beer"
+    post:
+      operationId: createBeer
+      tags: [beers]
+      summary: Create a beer/keg option (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBeerBody"
+      responses:
+        "201":
+          description: Created beer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Beer"
+
+  /beers/{id}:
+    get:
+      operationId: getBeer
+      tags: [beers]
+      summary: Get a beer option
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Beer option
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Beer"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateBeer
+      tags: [beers]
+      summary: Update a beer/keg option (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBeerBody"
+      responses:
+        "200":
+          description: Updated beer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Beer"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteBeer
+      tags: [beers]
+      summary: Delete a beer option (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # Keg Orders
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      summary: List keg orders (admin)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, confirmed, cancelled, completed]
+      responses:
+        "200":
+          description: List of orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Submit a keg order (public)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderBody"
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get an order detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Order detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateOrder
+      tags: [orders]
+      summary: Update an order (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderBody"
+      responses:
+        "200":
+          description: Updated order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/{id}/confirm:
+    post:
+      operationId: confirmOrder
+      tags: [orders]
+      summary: Confirm order and capture Clover payment (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Order confirmed and payment captured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Payment capture failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/{id}/cancel:
+    post:
+      operationId: cancelOrder
+      tags: [orders]
+      summary: Cancel an order (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Order cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # Payment authorization
+  /payments/authorize:
+    post:
+      operationId: authorizePayment
+      tags: [payments]
+      summary: Create a Clover payment pre-authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizePaymentBody"
+      responses:
+        "200":
+          description: Payment authorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentAuthorization"
+        "400":
+          description: Authorization failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # Pickup schedule
+  /pickup:
+    get:
+      operationId: listPickups
+      tags: [pickup]
+      summary: List pickups (admin calendar)
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+        - name: endDate
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of pickups
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pickup"
+
+  /pickup/{orderId}:
+    get:
+      operationId: getPickup
+      tags: [pickup]
+      summary: Get pickup details for an order
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Pickup details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pickup"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # Keg receipt forms
+  /receipts/{orderId}:
+    get:
+      operationId: getKegReceipt
+      tags: [receipts]
+      summary: Get Idaho keg receipt for an order
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Keg receipt form
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KegReceipt"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createOrUpdateKegReceipt
+      tags: [receipts]
+      summary: Create or update Idaho keg receipt for an order
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateKegReceiptBody"
+      responses:
+        "200":
+          description: Keg receipt saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KegReceipt"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /receipts/{orderId}/signature:
+    post:
+      operationId: saveReceiptSignature
+      tags: [receipts]
+      summary: Save customer signature for a receipt
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveSignatureBody"
+      responses:
+        "200":
+          description: Signature saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KegReceipt"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # Dashboard summary (wow endpoint)
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Admin dashboard summary stats
+      responses:
+        "200":
+          description: Summary stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/recent-orders:
+    get:
+      operationId: getRecentOrders
+      tags: [dashboard]
+      summary: Recent orders for admin feed
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Recent orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +503,524 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    Beer:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        kegSize:
+          type: string
+        price:
+          type: number
+        available:
+          type: boolean
+        notes:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - kegSize
+        - price
+        - available
+        - notes
+        - createdAt
+        - updatedAt
+
+    CreateBeerBody:
+      type: object
+      properties:
+        name:
+          type: string
+        kegSize:
+          type: string
+        price:
+          type: number
+        available:
+          type: boolean
+        notes:
+          type: ["string", "null"]
+      required:
+        - name
+        - kegSize
+        - price
+        - available
+
+    UpdateBeerBody:
+      type: object
+      properties:
+        name:
+          type: string
+        kegSize:
+          type: string
+        price:
+          type: number
+        available:
+          type: boolean
+        notes:
+          type: ["string", "null"]
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        customerPhone:
+          type: string
+        pickupDate:
+          type: string
+        pickupTime:
+          type: string
+        beerId:
+          type: integer
+        beerName:
+          type: string
+        kegSize:
+          type: string
+        quantity:
+          type: integer
+        depositAmount:
+          type: number
+        partyTapNeeded:
+          type: boolean
+        co2Needed:
+          type: boolean
+        notes:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, completed]
+        paymentStatus:
+          type: string
+          enum: [pending, authorized, captured, failed, refunded]
+        cloverPaymentId:
+          type: ["string", "null"]
+        totalAmount:
+          type: number
+        paymentError:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - customerName
+        - customerEmail
+        - customerPhone
+        - pickupDate
+        - pickupTime
+        - beerId
+        - beerName
+        - kegSize
+        - quantity
+        - depositAmount
+        - partyTapNeeded
+        - co2Needed
+        - notes
+        - status
+        - paymentStatus
+        - cloverPaymentId
+        - totalAmount
+        - paymentError
+        - createdAt
+        - updatedAt
+
+    OrderDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        customerPhone:
+          type: string
+        pickupDate:
+          type: string
+        pickupTime:
+          type: string
+        beerId:
+          type: integer
+        beerName:
+          type: string
+        kegSize:
+          type: string
+        quantity:
+          type: integer
+        depositAmount:
+          type: number
+        partyTapNeeded:
+          type: boolean
+        co2Needed:
+          type: boolean
+        notes:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, completed]
+        paymentStatus:
+          type: string
+          enum: [pending, authorized, captured, failed, refunded]
+        cloverPaymentId:
+          type: ["string", "null"]
+        totalAmount:
+          type: number
+        paymentError:
+          type: ["string", "null"]
+        receipt:
+          $ref: "#/components/schemas/KegReceipt"
+        pickup:
+          $ref: "#/components/schemas/Pickup"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - customerName
+        - customerEmail
+        - customerPhone
+        - pickupDate
+        - pickupTime
+        - beerId
+        - beerName
+        - kegSize
+        - quantity
+        - depositAmount
+        - partyTapNeeded
+        - co2Needed
+        - notes
+        - status
+        - paymentStatus
+        - cloverPaymentId
+        - totalAmount
+        - paymentError
+        - receipt
+        - pickup
+        - createdAt
+        - updatedAt
+
+    CreateOrderBody:
+      type: object
+      properties:
+        customerName:
+          type: string
+        customerEmail:
+          type: string
+        customerPhone:
+          type: string
+        pickupDate:
+          type: string
+        pickupTime:
+          type: string
+        beerId:
+          type: integer
+        quantity:
+          type: integer
+        partyTapNeeded:
+          type: boolean
+        co2Needed:
+          type: boolean
+        notes:
+          type: ["string", "null"]
+        cloverPaymentToken:
+          type: string
+        idempotencyKey:
+          type: string
+      required:
+        - customerName
+        - customerEmail
+        - customerPhone
+        - pickupDate
+        - pickupTime
+        - beerId
+        - quantity
+        - partyTapNeeded
+        - co2Needed
+        - cloverPaymentToken
+        - idempotencyKey
+
+    UpdateOrderBody:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, completed]
+        notes:
+          type: ["string", "null"]
+        pickupDate:
+          type: string
+        pickupTime:
+          type: string
+
+    AuthorizePaymentBody:
+      type: object
+      properties:
+        amount:
+          type: integer
+        source:
+          type: string
+        idempotencyKey:
+          type: string
+        orderId:
+          type: ["integer", "null"]
+      required:
+        - amount
+        - source
+        - idempotencyKey
+
+    PaymentAuthorization:
+      type: object
+      properties:
+        id:
+          type: integer
+        cloverPaymentId:
+          type: string
+        amount:
+          type: integer
+        status:
+          type: string
+        idempotencyKey:
+          type: string
+        orderId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - cloverPaymentId
+        - amount
+        - status
+        - idempotencyKey
+        - orderId
+        - createdAt
+
+    Pickup:
+      type: object
+      properties:
+        id:
+          type: integer
+        orderId:
+          type: integer
+        customerName:
+          type: string
+        pickupDate:
+          type: string
+        pickupTime:
+          type: string
+        beerName:
+          type: string
+        kegSize:
+          type: string
+        quantity:
+          type: integer
+        status:
+          type: string
+          enum: [scheduled, completed, cancelled]
+        createdAt:
+          type: string
+      required:
+        - id
+        - orderId
+        - customerName
+        - pickupDate
+        - pickupTime
+        - beerName
+        - kegSize
+        - quantity
+        - status
+        - createdAt
+
+    KegReceipt:
+      type: object
+      properties:
+        id:
+          type: integer
+        orderId:
+          type: integer
+        dateOfSale:
+          type: ["string", "null"]
+        dateOfReturn:
+          type: ["string", "null"]
+        purchaserName:
+          type: ["string", "null"]
+        purchaserDob:
+          type: ["string", "null"]
+        purchaserPhone:
+          type: ["string", "null"]
+        consumptionLocation:
+          type: ["string", "null"]
+        consumptionTime:
+          type: ["string", "null"]
+        consumptionDate:
+          type: ["string", "null"]
+        validIdNumber:
+          type: ["string", "null"]
+        vehicleYear:
+          type: ["string", "null"]
+        vehicleMake:
+          type: ["string", "null"]
+        vehicleColor:
+          type: ["string", "null"]
+        vehiclePlate:
+          type: ["string", "null"]
+        customerSignature:
+          type: ["string", "null"]
+        signedAt:
+          type: ["string", "null"]
+        staffName:
+          type: ["string", "null"]
+        draftSystemNumber:
+          type: ["string", "null"]
+        co2TankNeeded:
+          type: ["boolean", "null"]
+        co2RegulatorNumber:
+          type: ["string", "null"]
+        trashCanNumbers:
+          type: ["string", "null"]
+        kegBrand:
+          type: ["string", "null"]
+        kegSize:
+          type: ["string", "null"]
+        kegIdNumbers:
+          type: ["string", "null"]
+        completed:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - orderId
+        - dateOfSale
+        - dateOfReturn
+        - purchaserName
+        - purchaserDob
+        - purchaserPhone
+        - consumptionLocation
+        - consumptionTime
+        - consumptionDate
+        - validIdNumber
+        - vehicleYear
+        - vehicleMake
+        - vehicleColor
+        - vehiclePlate
+        - customerSignature
+        - signedAt
+        - staffName
+        - draftSystemNumber
+        - co2TankNeeded
+        - co2RegulatorNumber
+        - trashCanNumbers
+        - kegBrand
+        - kegSize
+        - kegIdNumbers
+        - completed
+        - createdAt
+        - updatedAt
+
+    CreateKegReceiptBody:
+      type: object
+      properties:
+        dateOfSale:
+          type: ["string", "null"]
+        dateOfReturn:
+          type: ["string", "null"]
+        purchaserName:
+          type: ["string", "null"]
+        purchaserDob:
+          type: ["string", "null"]
+        purchaserPhone:
+          type: ["string", "null"]
+        consumptionLocation:
+          type: ["string", "null"]
+        consumptionTime:
+          type: ["string", "null"]
+        consumptionDate:
+          type: ["string", "null"]
+        validIdNumber:
+          type: ["string", "null"]
+        vehicleYear:
+          type: ["string", "null"]
+        vehicleMake:
+          type: ["string", "null"]
+        vehicleColor:
+          type: ["string", "null"]
+        vehiclePlate:
+          type: ["string", "null"]
+        staffName:
+          type: ["string", "null"]
+        draftSystemNumber:
+          type: ["string", "null"]
+        co2TankNeeded:
+          type: ["boolean", "null"]
+        co2RegulatorNumber:
+          type: ["string", "null"]
+        trashCanNumbers:
+          type: ["string", "null"]
+        kegBrand:
+          type: ["string", "null"]
+        kegSize:
+          type: ["string", "null"]
+        kegIdNumbers:
+          type: ["string", "null"]
+
+    SaveSignatureBody:
+      type: object
+      properties:
+        customerSignature:
+          type: string
+        signedAt:
+          type: string
+      required:
+        - customerSignature
+        - signedAt
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalOrders:
+          type: integer
+        pendingOrders:
+          type: integer
+        confirmedOrders:
+          type: integer
+        completedOrders:
+          type: integer
+        totalRevenue:
+          type: number
+        pendingRevenue:
+          type: number
+        upcomingPickups:
+          type: integer
+        todayPickups:
+          type: integer
+      required:
+        - totalOrders
+        - pendingOrders
+        - confirmedOrders
+        - completedOrders
+        - totalRevenue
+        - pendingRevenue
+        - upcomingPickups
+        - todayPickups
