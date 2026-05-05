@@ -1,11 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-  <!-- Mountain Peaks -->
-  <path d="M10 80 L50 20 L90 80 Z" fill="#D97706" />
-  <path d="M30 80 L60 35 L90 80 Z" fill="#B45309" opacity="0.8"/>
-  <path d="M50 20 L65 40 L45 50 Z" fill="#FBBF24" />
-  <!-- Keg -->
-  <rect x="40" y="60" width="20" height="25" rx="3" fill="#4B5563" />
-  <line x1="40" y1="65" x2="60" y2="65" stroke="#9CA3AF" stroke-width="2" />
-  <line x1="40" y1="80" x2="60" y2="80" stroke="#9CA3AF" stroke-width="2" />
-  <circle cx="50" cy="72.5" r="4" fill="#9CA3AF" />
+  <!-- Sawtooth mountain range -->
+  <polygon points="10,75 30,35 42,55 55,25 68,50 80,38 90,75" fill="#b45309"/>
+  <polygon points="55,25 68,50 80,38 90,75 55,75" fill="#92400e" opacity="0.5"/>
+  <!-- Snow peaks -->
+  <polygon points="55,25 50,35 60,35" fill="#fef3c7"/>
+  <polygon points="30,35 26,42 34,42" fill="#fef3c7"/>
+  <!-- Keg at base -->
+  <rect x="40" y="62" width="20" height="18" rx="3" fill="#44403c"/>
+  <rect x="38" y="65" width="24" height="3" rx="1" fill="#78716c"/>
+  <rect x="38" y="74" width="24" height="3" rx="1" fill="#78716c"/>
+  <circle cx="50" cy="70" r="3" fill="#d97706"/>
+  <!-- Tap handle -->
+  <rect x="48" y="57" width="4" height="7" rx="2" fill="#d97706"/>
 </svg>
