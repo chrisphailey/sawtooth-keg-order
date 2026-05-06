@@ -113,6 +113,11 @@ export async function sendOrderConfirmationEmails(
         { orderId: order.id, adminEmail, receiptUrl },
         "Email mock — admin notification would be sent here",
       );
+    } else {
+      log.info(
+        { orderId: order.id },
+        "Email mock — ADMIN_EMAIL not set, admin notification skipped",
+      );
     }
     return;
   }

@@ -433,7 +433,7 @@ export default function KegOrderForm() {
                   )} />
 
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Signature (optional but recommended)</p>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Signature <span className="text-destructive">*</span></p>
                     <SignaturePad
                       onSave={(dataUrl) => setSignature(dataUrl)}
                       onClear={() => setSignature(null)}
