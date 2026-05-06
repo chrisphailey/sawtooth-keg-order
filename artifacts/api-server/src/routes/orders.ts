@@ -53,9 +53,22 @@ router.post("/orders", async (req, res): Promise<void> => {
     return;
   }
 
+  const RENTAL_FEES: Record<string, number> = {
+    "My own equipment": 0,
+    "Hand Pump Party Tap rental ($10 rental)": 10,
+    "CO2 Party Tap rental ($10 rental + $10 CO2 fee)": 20,
+    "Jockey Box ($20 rental + $10 CO2 fee) Limited Supply": 30,
+    "Draft Trailer Rental ($125/day + $10 a mile both directions)": 125,
+  };
+
+  const pouringMethod = parsed.data.pouringMethod ?? "My own equipment";
+  const rentalFee = RENTAL_FEES[pouringMethod] ?? 0;
+  const partyTapNeeded = ["Hand Pump Party Tap rental ($10 rental)", "CO2 Party Tap rental ($10 rental + $10 CO2 fee)"].includes(pouringMethod);
+  const co2Needed = ["CO2 Party Tap rental ($10 rental + $10 CO2 fee)", "Jockey Box ($20 rental + $10 CO2 fee) Limited Supply"].includes(pouringMethod);
+
   const depositAmount = 30;
   const beerTotal = Number(beer.price) * parsed.data.quantity;
-  const totalAmount = beerTotal + depositAmount;
+  const totalAmount = beerTotal + depositAmount + rentalFee;
 
   const [order] = await db
     .insert(ordersTable)
@@ -70,8 +83,10 @@ router.post("/orders", async (req, res): Promise<void> => {
       kegSize: beer.kegSize,
       quantity: parsed.data.quantity,
       depositAmount: String(depositAmount),
-      partyTapNeeded: parsed.data.partyTapNeeded,
-      co2Needed: parsed.data.co2Needed,
+      pouringMethod,
+      partyTapNeeded,
+      co2Needed,
+      rentalFee: String(rentalFee),
       notes: parsed.data.notes ?? null,
       status: "pending",
       paymentStatus: "authorized",

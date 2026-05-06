@@ -11,9 +11,8 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, CheckCircle, XCircle, FileText, Calendar, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, FileText, Printer, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 
@@ -94,6 +93,26 @@ export default function AdminOrderDetail() {
               </div>
             )}
 
+            {/* Idaho State Police form banner — always visible */}
+            <div className="mb-4 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3" data-testid="banner-isp-form">
+              <div>
+                <p className="text-sm font-semibold text-amber-900">Idaho State Police Keg Receipt</p>
+                <p className="text-xs text-amber-700 mt-0.5">Required for all keg sales — complete at time of pickup</p>
+              </div>
+              <div className="flex gap-2">
+                <Link href={`/pickup/${orderId}/forms`}>
+                  <Button size="sm" variant="outline" className="border-amber-300 text-amber-900 hover:bg-amber-100" data-testid="link-isp-form">
+                    <FileText className="h-3.5 w-3.5 mr-1.5" /> Fill Out
+                  </Button>
+                </Link>
+                <Link href={`/pickup/${orderId}/receipt`}>
+                  <Button size="sm" variant="ghost" className="text-amber-900 hover:bg-amber-100" data-testid="link-isp-receipt">
+                    <Printer className="h-3.5 w-3.5 mr-1.5" /> Print
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
             <div className="grid gap-4">
               <Card>
                 <CardHeader><CardTitle className="text-base">Customer</CardTitle></CardHeader>
@@ -111,8 +130,13 @@ export default function AdminOrderDetail() {
                   <div><span className="text-muted-foreground block">Keg Size</span>{order.data.kegSize}</div>
                   <div><span className="text-muted-foreground block">Quantity</span>{order.data.quantity}</div>
                   <div><span className="text-muted-foreground block">Deposit</span>${Number(order.data.depositAmount).toFixed(2)}</div>
-                  <div><span className="text-muted-foreground block">Party Tap</span>{order.data.partyTapNeeded ? "Yes" : "No"}</div>
-                  <div><span className="text-muted-foreground block">CO2</span>{order.data.co2Needed ? "Yes" : "No"}</div>
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground block">Pouring Method</span>
+                    {order.data.pouringMethod}
+                  </div>
+                  {Number(order.data.rentalFee) > 0 && (
+                    <div><span className="text-muted-foreground block">Rental Fee</span>${Number(order.data.rentalFee).toFixed(2)}</div>
+                  )}
                   {order.data.notes && <div className="col-span-2"><span className="text-muted-foreground block">Notes</span>{order.data.notes}</div>}
                 </CardContent>
               </Card>
@@ -128,7 +152,8 @@ export default function AdminOrderDetail() {
               <Card>
                 <CardHeader><CardTitle className="text-base">Payment</CardTitle></CardHeader>
                 <CardContent className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-muted-foreground block">Status</span>
+                  <div>
+                    <span className="text-muted-foreground block">Status</span>
                     <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium mt-0.5 ${
                       order.data.paymentStatus === "captured" ? "bg-green-100 text-green-800" :
                       order.data.paymentStatus === "authorized" ? "bg-amber-100 text-amber-800" :
@@ -157,20 +182,6 @@ export default function AdminOrderDetail() {
                 <Button variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/5" onClick={handleCancel} data-testid="button-cancel-order">
                   <XCircle className="h-4 w-4 mr-2" /> Cancel Order
                 </Button>
-              )}
-              {order.data.status === "confirmed" && (
-                <>
-                  <Link href={`/pickup/${orderId}/forms`}>
-                    <Button variant="outline" data-testid="link-pickup-forms">
-                      <FileText className="h-4 w-4 mr-2" /> Pickup Forms
-                    </Button>
-                  </Link>
-                  <Link href={`/pickup/${orderId}/receipt`}>
-                    <Button variant="outline" data-testid="link-receipt">
-                      <Calendar className="h-4 w-4 mr-2" /> View Receipt
-                    </Button>
-                  </Link>
-                </>
               )}
             </div>
           </>

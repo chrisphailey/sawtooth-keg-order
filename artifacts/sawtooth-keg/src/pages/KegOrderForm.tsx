@@ -2,34 +2,38 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   useListBeers,
   useAuthorizePayment,
   useCreateOrder,
-  getListBeersQueryKey,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Loader2 } from "lucide-react";
 
+const POURING_OPTIONS = [
+  { label: "My own equipment", fee: 0 },
+  { label: "Hand Pump Party Tap rental ($10 rental)", fee: 10 },
+  { label: "CO2 Party Tap rental ($10 rental + $10 CO2 fee)", fee: 20 },
+  { label: "Jockey Box ($20 rental + $10 CO2 fee) Limited Supply", fee: 30 },
+  { label: "Draft Trailer Rental ($125/day + $10 a mile both directions)", fee: 125 },
+] as const;
+
 const schema = z.object({
   customerName: z.string().min(2, "Name is required"),
   customerEmail: z.string().email("Valid email required"),
   customerPhone: z.string().min(7, "Phone number required"),
+  returnDate: z.string().min(1, "Return date required"),
   pickupDate: z.string().min(1, "Pickup date required"),
   pickupTime: z.string().min(1, "Pickup time required"),
   beerId: z.coerce.number().min(1, "Select a beer"),
   quantity: z.coerce.number().min(1).max(10),
-  partyTapNeeded: z.boolean(),
-  co2Needed: z.boolean(),
+  pouringMethod: z.string().min(1, "Select how you will pour the beer"),
   notes: z.string().optional(),
   cardNumber: z.string().min(13, "Card number required").max(19),
   cardExp: z.string().regex(/^\d{2}\/\d{2}$/, "Format: MM/YY"),
@@ -53,12 +57,12 @@ export default function KegOrderForm() {
       customerName: "",
       customerEmail: "",
       customerPhone: "",
+      returnDate: "",
       pickupDate: "",
       pickupTime: "12:00",
       beerId: 0,
       quantity: 1,
-      partyTapNeeded: false,
-      co2Needed: false,
+      pouringMethod: "",
       notes: "",
       cardNumber: "",
       cardExp: "",
@@ -68,10 +72,13 @@ export default function KegOrderForm() {
 
   const selectedBeerId = form.watch("beerId");
   const quantity = form.watch("quantity");
+  const pouringMethod = form.watch("pouringMethod");
   const selectedBeer = beers.data?.find((b) => b.id === Number(selectedBeerId));
+  const selectedPouring = POURING_OPTIONS.find((o) => o.label === pouringMethod);
   const beerTotal = selectedBeer ? Number(selectedBeer.price) * quantity : 0;
+  const rentalFee = selectedPouring?.fee ?? 0;
   const depositAmount = 30;
-  const total = beerTotal + depositAmount;
+  const total = beerTotal + depositAmount + rentalFee;
 
   const onSubmit = async (values: FormValues) => {
     setSubmitError(null);
@@ -100,8 +107,7 @@ export default function KegOrderForm() {
               pickupTime: values.pickupTime,
               beerId: Number(values.beerId),
               quantity: values.quantity,
-              partyTapNeeded: values.partyTapNeeded,
-              co2Needed: values.co2Needed,
+              pouringMethod: values.pouringMethod,
               notes: values.notes || null,
               cloverPaymentToken: auth.cloverPaymentId,
               idempotencyKey: auth.idempotencyKey,
@@ -159,6 +165,7 @@ export default function KegOrderForm() {
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Contact */}
             <Card>
               <CardHeader><CardTitle className="text-base">Your Information</CardTitle></CardHeader>
               <CardContent className="space-y-4">
@@ -188,6 +195,7 @@ export default function KegOrderForm() {
               </CardContent>
             </Card>
 
+            {/* Keg */}
             <Card>
               <CardHeader><CardTitle className="text-base">Keg Selection</CardTitle></CardHeader>
               <CardContent className="space-y-4">
@@ -223,25 +231,67 @@ export default function KegOrderForm() {
                     <FormMessage />
                   </FormItem>
                 )} />
+              </CardContent>
+            </Card>
 
-                <div className="flex flex-col gap-3 pt-2">
-                  <FormField control={form.control} name="partyTapNeeded" render={({ field }) => (
-                    <FormItem className="flex items-center gap-3">
-                      <FormControl>
-                        <Checkbox checked={field.value} onCheckedChange={field.onChange} data-testid="checkbox-party-tap" />
-                      </FormControl>
-                      <FormLabel className="!mt-0 font-normal cursor-pointer">Party tap needed (rental included)</FormLabel>
+            {/* Pickup & Return */}
+            <Card>
+              <CardHeader><CardTitle className="text-base">Pickup & Return</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField control={form.control} name="pickupDate" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pickup Date</FormLabel>
+                      <FormControl><Input type="date" {...field} min={new Date().toISOString().slice(0, 10)} data-testid="input-pickup-date" /></FormControl>
+                      <FormMessage />
                     </FormItem>
                   )} />
-                  <FormField control={form.control} name="co2Needed" render={({ field }) => (
-                    <FormItem className="flex items-center gap-3">
-                      <FormControl>
-                        <Checkbox checked={field.value} onCheckedChange={field.onChange} data-testid="checkbox-co2" />
-                      </FormControl>
-                      <FormLabel className="!mt-0 font-normal cursor-pointer">CO2 tank rental needed</FormLabel>
+                  <FormField control={form.control} name="pickupTime" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Pickup Time</FormLabel>
+                      <FormControl><Input type="time" {...field} data-testid="input-pickup-time" /></FormControl>
+                      <FormMessage />
                     </FormItem>
                   )} />
                 </div>
+                <FormField control={form.control} name="returnDate" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>When will you return the keg and equipment?</FormLabel>
+                    <FormControl><Input type="date" {...field} min={new Date().toISOString().slice(0, 10)} data-testid="input-return-date" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </CardContent>
+            </Card>
+
+            {/* Pouring method */}
+            <Card>
+              <CardHeader><CardTitle className="text-base">How will you pour the beer?</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <FormField control={form.control} name="pouringMethod" render={({ field }) => (
+                  <FormItem>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-pouring-method">
+                          <SelectValue placeholder="Choose" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {POURING_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.label} value={opt.label} data-testid={`option-pouring-${opt.label.split(" ")[0].toLowerCase()}`}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                {rentalFee > 0 && (
+                  <p className="text-sm text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+                    Rental fee of <strong>${rentalFee.toFixed(2)}</strong> will be added to your pre-authorization.
+                  </p>
+                )}
 
                 <FormField control={form.control} name="notes" render={({ field }) => (
                   <FormItem>
@@ -253,26 +303,7 @@ export default function KegOrderForm() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader><CardTitle className="text-base">Pickup Schedule</CardTitle></CardHeader>
-              <CardContent className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="pickupDate" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pickup Date</FormLabel>
-                    <FormControl><Input type="date" {...field} min={new Date().toISOString().slice(0, 10)} data-testid="input-pickup-date" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="pickupTime" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Pickup Time</FormLabel>
-                    <FormControl><Input type="time" {...field} data-testid="input-pickup-time" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-              </CardContent>
-            </Card>
-
+            {/* Payment */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Payment</CardTitle>
@@ -306,16 +337,22 @@ export default function KegOrderForm() {
                 <div className="space-y-1 text-sm">
                   {selectedBeer && (
                     <div className="flex justify-between">
-                      <span>{selectedBeer.name} × {quantity}</span>
+                      <span>{selectedBeer.name} — {selectedBeer.kegSize} × {quantity}</span>
                       <span>${beerTotal.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between">
-                    <span>Deposit</span>
+                  {rentalFee > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Equipment rental</span>
+                      <span>${rentalFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Deposit (refundable)</span>
                     <span>${depositAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between font-semibold pt-1 border-t">
-                    <span>Total</span>
+                    <span>Pre-authorization total</span>
                     <span>${total.toFixed(2)}</span>
                   </div>
                 </div>
@@ -337,7 +374,7 @@ export default function KegOrderForm() {
               {form.formState.isSubmitting ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Processing...</>
               ) : (
-                "Submit Order & Pre-Authorize $" + total.toFixed(2)
+                `Submit Order & Pre-Authorize $${total.toFixed(2)}`
               )}
             </Button>
           </form>

@@ -598,10 +598,14 @@ components:
           type: integer
         depositAmount:
           type: number
+        pouringMethod:
+          type: string
         partyTapNeeded:
           type: boolean
         co2Needed:
           type: boolean
+        rentalFee:
+          type: number
         notes:
           type: ["string", "null"]
         status:
@@ -632,8 +636,10 @@ components:
         - kegSize
         - quantity
         - depositAmount
+        - pouringMethod
         - partyTapNeeded
         - co2Needed
+        - rentalFee
         - notes
         - status
         - paymentStatus
@@ -668,10 +674,14 @@ components:
           type: integer
         depositAmount:
           type: number
+        pouringMethod:
+          type: string
         partyTapNeeded:
           type: boolean
         co2Needed:
           type: boolean
+        rentalFee:
+          type: number
         notes:
           type: ["string", "null"]
         status:
@@ -706,8 +716,10 @@ components:
         - kegSize
         - quantity
         - depositAmount
+        - pouringMethod
         - partyTapNeeded
         - co2Needed
+        - rentalFee
         - notes
         - status
         - paymentStatus
@@ -736,10 +748,8 @@ components:
           type: integer
         quantity:
           type: integer
-        partyTapNeeded:
-          type: boolean
-        co2Needed:
-          type: boolean
+        pouringMethod:
+          type: string
         notes:
           type: ["string", "null"]
         cloverPaymentToken:
@@ -754,8 +764,7 @@ components:
         - pickupTime
         - beerId
         - quantity
-        - partyTapNeeded
-        - co2Needed
+        - pouringMethod
         - cloverPaymentToken
         - idempotencyKey
 
