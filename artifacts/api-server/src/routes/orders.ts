@@ -296,7 +296,7 @@ router.post("/orders/:id/customer-receipt", async (req, res): Promise<void> => {
       dateOfReturn: returnDate,
       purchaserName: order.customerName,
       purchaserPhone: order.customerPhone,
-      consumptionDate: order.pickupDate,
+      consumptionDate: parsed.data.consumptionDate ?? order.pickupDate,
       kegBrand: "Sawtooth Brewery",
       kegSize: order.kegSize,
       purchaserDob: parsed.data.purchaserDob ?? null,
