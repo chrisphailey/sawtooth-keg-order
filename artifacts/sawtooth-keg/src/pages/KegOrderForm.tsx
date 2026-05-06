@@ -63,6 +63,7 @@ interface OrderConfirmation {
   customerToken: string;
   customerName: string;
   customerEmail: string;
+  customerPhone: string;
   pickupDate: string;
   pickupTime: string;
   beerName: string;
@@ -185,6 +186,7 @@ export default function KegOrderForm() {
                 customerToken: order.customerToken,
                 customerName: order.customerName,
                 customerEmail: order.customerEmail,
+                customerPhone: order.customerPhone,
                 pickupDate: order.pickupDate,
                 pickupTime: order.pickupTime,
                 beerName: order.beerName,
@@ -314,6 +316,10 @@ export default function KegOrderForm() {
                   <div>
                     <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Purchaser Name</p>
                     <p className="text-sm font-medium">{orderConfirmation.customerName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Phone</p>
+                    <p className="text-sm font-medium">{orderConfirmation.customerPhone}</p>
                   </div>
                   <FormField control={ispForm.control} name="purchaserDob" render={({ field }) => (
                     <FormItem>
