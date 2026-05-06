@@ -75,15 +75,18 @@ interface OrderConfirmation {
 
 function StepIndicator({ step }: { step: 1 | 2 }) {
   return (
-    <div className="flex items-center justify-center gap-3 mb-6">
-      <div className={`flex items-center gap-2 text-sm font-medium ${step >= 1 ? "text-primary" : "text-muted-foreground"}`}>
-        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${step >= 1 ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}>1</span>
-        Keg Order
-      </div>
-      <div className={`h-px w-8 ${step >= 2 ? "bg-primary" : "bg-muted"}`} />
-      <div className={`flex items-center gap-2 text-sm font-medium ${step >= 2 ? "text-primary" : "text-muted-foreground"}`}>
-        <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${step >= 2 ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}>2</span>
-        State Form
+    <div className="flex flex-col items-center gap-2 mb-6">
+      <p className="text-xs text-muted-foreground font-medium">Step {step} of 2</p>
+      <div className="flex items-center gap-3">
+        <div className={`flex items-center gap-2 text-sm font-medium ${step >= 1 ? "text-primary" : "text-muted-foreground"}`}>
+          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${step >= 1 ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}>1</span>
+          Keg Order
+        </div>
+        <div className={`h-px w-8 ${step >= 2 ? "bg-primary" : "bg-muted"}`} />
+        <div className={`flex items-center gap-2 text-sm font-medium ${step >= 2 ? "text-primary" : "text-muted-foreground"}`}>
+          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${step >= 2 ? "bg-primary text-white" : "bg-muted text-muted-foreground"}`}>2</span>
+          State Form
+        </div>
       </div>
     </div>
   );

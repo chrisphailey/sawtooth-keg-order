@@ -20,8 +20,9 @@ import { sendOrderConfirmationEmails } from "../lib/email";
 const router: IRouter = Router();
 
 function serializeOrder(order: typeof ordersTable.$inferSelect) {
+  const { customerToken: _omit, ...rest } = order;
   return {
-    ...order,
+    ...rest,
     depositAmount: Number(order.depositAmount),
     totalAmount: Number(order.totalAmount),
   };
