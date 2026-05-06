@@ -1,5 +1,10 @@
 import { logger } from "./logger";
 
+function esc(s: string | null | undefined): string {
+  if (!s) return "";
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 interface OrderSummary {
   id: number;
   customerName: string;
@@ -36,25 +41,25 @@ function buildCustomerEmailHtml(order: OrderSummary, receipt: ReceiptSummary): s
     <p style="margin:8px 0 0; font-size: 14px; opacity: 0.9;">Keg Order Confirmation</p>
   </div>
   <div style="border: 1px solid #ddd; border-top: none; padding: 24px; border-radius: 0 0 8px 8px;">
-    <p>Dear <strong>${order.customerName}</strong>,</p>
+    <p>Dear <strong>${esc(order.customerName)}</strong>,</p>
     <p>Thank you for your keg order! Here's a summary of your order and the required Idaho State Police keg receipt you completed.</p>
 
     <h2 style="color: hsl(28,90%,45%); font-size: 16px; margin-top: 24px;">Order #${order.id}</h2>
     <table style="width:100%; border-collapse: collapse; font-size: 14px;">
-      <tr><td style="padding:4px 0; color:#666; width:50%">Beer</td><td>${order.beerName} — ${order.kegSize}</td></tr>
+      <tr><td style="padding:4px 0; color:#666; width:50%">Beer</td><td>${esc(order.beerName)} — ${esc(order.kegSize)}</td></tr>
       <tr><td style="padding:4px 0; color:#666">Quantity</td><td>${order.quantity}</td></tr>
-      <tr><td style="padding:4px 0; color:#666">Pickup Date</td><td>${order.pickupDate} at ${order.pickupTime}</td></tr>
-      <tr><td style="padding:4px 0; color:#666">Pouring Method</td><td>${order.pouringMethod}</td></tr>
+      <tr><td style="padding:4px 0; color:#666">Pickup Date</td><td>${esc(order.pickupDate)} at ${esc(order.pickupTime)}</td></tr>
+      <tr><td style="padding:4px 0; color:#666">Pouring Method</td><td>${esc(order.pouringMethod)}</td></tr>
       <tr><td style="padding:4px 0; color:#666; font-weight:bold">Pre-Authorization Total</td><td><strong>$${order.totalAmount.toFixed(2)}</strong></td></tr>
     </table>
 
     <h2 style="color: hsl(28,90%,45%); font-size: 16px; margin-top: 24px;">Idaho Keg Receipt (ISP)</h2>
     <table style="width:100%; border-collapse: collapse; font-size: 14px;">
-      ${receipt.consumptionLocation ? `<tr><td style="padding:4px 0; color:#666; width:50%">Consumption Location</td><td>${receipt.consumptionLocation}</td></tr>` : ""}
-      ${receipt.consumptionDate ? `<tr><td style="padding:4px 0; color:#666">Consumption Date</td><td>${receipt.consumptionDate}</td></tr>` : ""}
-      ${receipt.consumptionTime ? `<tr><td style="padding:4px 0; color:#666">Consumption Time</td><td>${receipt.consumptionTime}</td></tr>` : ""}
-      ${receipt.vehicleYear || receipt.vehicleMake ? `<tr><td style="padding:4px 0; color:#666">Vehicle</td><td>${[receipt.vehicleYear, receipt.vehicleMake, receipt.vehicleColor].filter(Boolean).join(" ")}</td></tr>` : ""}
-      ${receipt.vehiclePlate ? `<tr><td style="padding:4px 0; color:#666">License Plate</td><td>${receipt.vehiclePlate}</td></tr>` : ""}
+      ${receipt.consumptionLocation ? `<tr><td style="padding:4px 0; color:#666; width:50%">Consumption Location</td><td>${esc(receipt.consumptionLocation)}</td></tr>` : ""}
+      ${receipt.consumptionDate ? `<tr><td style="padding:4px 0; color:#666">Consumption Date</td><td>${esc(receipt.consumptionDate)}</td></tr>` : ""}
+      ${receipt.consumptionTime ? `<tr><td style="padding:4px 0; color:#666">Consumption Time</td><td>${esc(receipt.consumptionTime)}</td></tr>` : ""}
+      ${receipt.vehicleYear || receipt.vehicleMake ? `<tr><td style="padding:4px 0; color:#666">Vehicle</td><td>${esc([receipt.vehicleYear, receipt.vehicleMake, receipt.vehicleColor].filter(Boolean).join(" "))}</td></tr>` : ""}
+      ${receipt.vehiclePlate ? `<tr><td style="padding:4px 0; color:#666">License Plate</td><td>${esc(receipt.vehiclePlate)}</td></tr>` : ""}
     </table>
 
     <p style="font-size: 12px; color: #888; margin-top: 24px; border-top: 1px solid #eee; padding-top: 16px;">
@@ -77,13 +82,13 @@ function buildAdminEmailHtml(order: OrderSummary, receiptUrl: string | null): st
 <head><meta charset="utf-8"><title>New Keg Order #${order.id}</title></head>
 <body style="font-family: sans-serif; color: #333; max-width: 500px; margin: 0 auto; padding: 20px;">
   <h2>New Keg Order Received — #${order.id}</h2>
-  <p><strong>Customer:</strong> ${order.customerName} (${order.customerEmail})</p>
-  <p><strong>Beer:</strong> ${order.beerName} — ${order.kegSize} × ${order.quantity}</p>
-  <p><strong>Pickup:</strong> ${order.pickupDate} at ${order.pickupTime}</p>
-  <p><strong>Pouring Method:</strong> ${order.pouringMethod}</p>
+  <p><strong>Customer:</strong> ${esc(order.customerName)} (${esc(order.customerEmail)})</p>
+  <p><strong>Beer:</strong> ${esc(order.beerName)} — ${esc(order.kegSize)} × ${order.quantity}</p>
+  <p><strong>Pickup:</strong> ${esc(order.pickupDate)} at ${esc(order.pickupTime)}</p>
+  <p><strong>Pouring Method:</strong> ${esc(order.pouringMethod)}</p>
   <p><strong>Total:</strong> $${order.totalAmount.toFixed(2)}</p>
   <p>The customer has completed the ISP keg receipt form.</p>
-  ${receiptUrl ? `<p><a href="${receiptUrl}" style="display:inline-block;background:hsl(28,90%,45%);color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold;">View Receipt &amp; Manage Order</a></p><p style="font-size:12px;color:#888;">Or copy: ${receiptUrl}</p>` : "<p>Log in to the admin dashboard to view and manage this order.</p>"}
+  ${receiptUrl ? `<p><a href="${esc(receiptUrl)}" style="display:inline-block;background:hsl(28,90%,45%);color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold;">View Receipt &amp; Manage Order</a></p><p style="font-size:12px;color:#888;">Or copy: ${esc(receiptUrl)}</p>` : "<p>Log in to the admin dashboard to view and manage this order.</p>"}
 </body>
 </html>
   `.trim();
