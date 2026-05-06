@@ -322,13 +322,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/KegReceipt"
         "400":
-          description: Validation error or receipt already submitted
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Invalid or missing order token
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Receipt already submitted for this order
           content:
             application/json:
               schema:

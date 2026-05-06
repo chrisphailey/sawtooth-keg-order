@@ -288,31 +288,43 @@ router.post("/orders/:id/customer-receipt", async (req, res): Promise<void> => {
   const today = new Date().toISOString().slice(0, 10);
   const returnDate = new Date(new Date(order.pickupDate).getTime() + 7 * 86400000).toISOString().slice(0, 10);
 
-  const [receipt] = await db
-    .insert(kegReceiptsTable)
-    .values({
-      orderId: params.data.id,
-      dateOfSale: today,
-      dateOfReturn: returnDate,
-      purchaserName: order.customerName,
-      purchaserPhone: order.customerPhone,
-      consumptionDate: parsed.data.consumptionDate ?? order.pickupDate,
-      kegBrand: "Sawtooth Brewery",
-      kegSize: order.kegSize,
-      purchaserDob: parsed.data.purchaserDob,
-      consumptionLocation: parsed.data.consumptionLocation,
-      consumptionTime: parsed.data.consumptionTime ?? null,
-      validIdNumber: parsed.data.validIdNumber,
-      vehicleYear: parsed.data.vehicleYear ?? null,
-      vehicleMake: parsed.data.vehicleMake ?? null,
-      vehicleColor: parsed.data.vehicleColor ?? null,
-      vehiclePlate: parsed.data.vehiclePlate ?? null,
-      customerSignature: parsed.data.customerSignature,
-      signedAt: parsed.data.signedAt,
-      submittedByCustomer: true,
-      completed: true,
-    })
-    .returning();
+  let receipt: typeof kegReceiptsTable.$inferSelect;
+  try {
+    const [inserted] = await db
+      .insert(kegReceiptsTable)
+      .values({
+        orderId: params.data.id,
+        dateOfSale: today,
+        dateOfReturn: returnDate,
+        purchaserName: order.customerName,
+        purchaserPhone: order.customerPhone,
+        consumptionDate: parsed.data.consumptionDate ?? order.pickupDate,
+        kegBrand: "Sawtooth Brewery",
+        kegSize: order.kegSize,
+        purchaserDob: parsed.data.purchaserDob,
+        consumptionLocation: parsed.data.consumptionLocation,
+        consumptionTime: parsed.data.consumptionTime ?? null,
+        validIdNumber: parsed.data.validIdNumber,
+        vehicleYear: parsed.data.vehicleYear ?? null,
+        vehicleMake: parsed.data.vehicleMake ?? null,
+        vehicleColor: parsed.data.vehicleColor ?? null,
+        vehiclePlate: parsed.data.vehiclePlate ?? null,
+        customerSignature: parsed.data.customerSignature,
+        signedAt: parsed.data.signedAt,
+        submittedByCustomer: true,
+        completed: true,
+      })
+      .returning();
+    receipt = inserted;
+  } catch (err: unknown) {
+    const isUniqueViolation =
+      typeof err === "object" && err !== null && "code" in err && (err as { code: string }).code === "23505";
+    if (isUniqueViolation) {
+      res.status(409).json({ error: "Receipt already submitted for this order" });
+      return;
+    }
+    throw err;
+  }
 
   const receiptSummary = {
     consumptionLocation: parsed.data.consumptionLocation,
