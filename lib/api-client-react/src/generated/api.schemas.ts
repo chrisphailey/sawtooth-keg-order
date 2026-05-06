@@ -316,6 +316,31 @@ export interface CreateKegReceiptBody {
   kegIdNumbers?: string | null;
 }
 
+export interface CustomerReceiptBody {
+  /** @nullable */
+  purchaserDob?: string | null;
+  /** @nullable */
+  consumptionLocation?: string | null;
+  /** @nullable */
+  consumptionTime?: string | null;
+  /** @nullable */
+  consumptionDate?: string | null;
+  /** @nullable */
+  validIdNumber?: string | null;
+  /** @nullable */
+  vehicleYear?: string | null;
+  /** @nullable */
+  vehicleMake?: string | null;
+  /** @nullable */
+  vehicleColor?: string | null;
+  /** @nullable */
+  vehiclePlate?: string | null;
+  /** @nullable */
+  customerSignature?: string | null;
+  /** @nullable */
+  signedAt?: string | null;
+}
+
 export interface SaveSignatureBody {
   customerSignature: string;
   signedAt: string;

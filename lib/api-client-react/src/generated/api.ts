@@ -22,6 +22,7 @@ import type {
   CreateBeerBody,
   CreateKegReceiptBody,
   CreateOrderBody,
+  CustomerReceiptBody,
   DashboardSummary,
   ErrorResponse,
   GetRecentOrdersParams,
@@ -1069,6 +1070,93 @@ export const useCancelOrder = <
   TContext
 > => {
   return useMutation(getCancelOrderMutationOptions(options));
+};
+
+/**
+ * @summary Customer submits ISP keg receipt as step 2 of order flow (public, once-only)
+ */
+export const getSubmitCustomerReceiptUrl = (id: number) => {
+  return `/api/orders/${id}/customer-receipt`;
+};
+
+export const submitCustomerReceipt = async (
+  id: number,
+  customerReceiptBody: CustomerReceiptBody,
+  options?: RequestInit,
+): Promise<KegReceipt> => {
+  return customFetch<KegReceipt>(getSubmitCustomerReceiptUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(customerReceiptBody),
+  });
+};
+
+export const getSubmitCustomerReceiptMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitCustomerReceipt>>,
+    TError,
+    { id: number; data: BodyType<CustomerReceiptBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitCustomerReceipt>>,
+  TError,
+  { id: number; data: BodyType<CustomerReceiptBody> },
+  TContext
+> => {
+  const mutationKey = ["submitCustomerReceipt"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitCustomerReceipt>>,
+    { id: number; data: BodyType<CustomerReceiptBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return submitCustomerReceipt(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitCustomerReceiptMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitCustomerReceipt>>
+>;
+export type SubmitCustomerReceiptMutationBody = BodyType<CustomerReceiptBody>;
+export type SubmitCustomerReceiptMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Customer submits ISP keg receipt as step 2 of order flow (public, once-only)
+ */
+export const useSubmitCustomerReceipt = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitCustomerReceipt>>,
+    TError,
+    { id: number; data: BodyType<CustomerReceiptBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitCustomerReceipt>>,
+  TError,
+  { id: number; data: BodyType<CustomerReceiptBody> },
+  TContext
+> => {
+  return useMutation(getSubmitCustomerReceiptMutationOptions(options));
 };
 
 /**

@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, desc } from "drizzle-orm";
-import { db, ordersTable, beersTable, pickupScheduleTable, paymentAuthorizationsTable } from "@workspace/db";
+import { db, ordersTable, beersTable, pickupScheduleTable, paymentAuthorizationsTable, kegReceiptsTable } from "@workspace/db";
 import {
   ListOrdersQueryParams,
   CreateOrderBody,
@@ -9,9 +9,12 @@ import {
   UpdateOrderBody,
   ConfirmOrderParams,
   CancelOrderParams,
+  SubmitCustomerReceiptParams,
+  SubmitCustomerReceiptBody,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { capturePayment } from "../lib/clover";
+import { sendOrderConfirmationEmails } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -240,6 +243,102 @@ router.post("/orders/:id/confirm", requireAuth, async (req, res): Promise<void> 
 
     res.status(400).json({ error: message });
   }
+});
+
+router.post("/orders/:id/customer-receipt", async (req, res): Promise<void> => {
+  const params = SubmitCustomerReceiptParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const parsed = SubmitCustomerReceiptBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [order] = await db
+    .select()
+    .from(ordersTable)
+    .where(eq(ordersTable.id, params.data.id));
+
+  if (!order) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+
+  const existing = await db
+    .select()
+    .from(kegReceiptsTable)
+    .where(eq(kegReceiptsTable.orderId, params.data.id));
+
+  if (existing.length > 0) {
+    res.status(400).json({ error: "Receipt already submitted for this order" });
+    return;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const returnDate = new Date(new Date(order.pickupDate).getTime() + 7 * 86400000).toISOString().slice(0, 10);
+
+  const [receipt] = await db
+    .insert(kegReceiptsTable)
+    .values({
+      orderId: params.data.id,
+      dateOfSale: today,
+      dateOfReturn: returnDate,
+      purchaserName: order.customerName,
+      purchaserPhone: order.customerPhone,
+      consumptionDate: order.pickupDate,
+      kegBrand: "Sawtooth Brewery",
+      kegSize: order.kegSize,
+      purchaserDob: parsed.data.purchaserDob ?? null,
+      consumptionLocation: parsed.data.consumptionLocation ?? null,
+      consumptionTime: parsed.data.consumptionTime ?? null,
+      validIdNumber: parsed.data.validIdNumber ?? null,
+      vehicleYear: parsed.data.vehicleYear ?? null,
+      vehicleMake: parsed.data.vehicleMake ?? null,
+      vehicleColor: parsed.data.vehicleColor ?? null,
+      vehiclePlate: parsed.data.vehiclePlate ?? null,
+      customerSignature: parsed.data.customerSignature ?? null,
+      signedAt: parsed.data.signedAt ?? null,
+      completed: !!(parsed.data.customerSignature),
+    })
+    .returning();
+
+  const receiptSummary = {
+    consumptionLocation: parsed.data.consumptionLocation,
+    consumptionDate: order.pickupDate,
+    consumptionTime: parsed.data.consumptionTime,
+    purchaserDob: parsed.data.purchaserDob,
+    validIdNumber: parsed.data.validIdNumber,
+    vehicleYear: parsed.data.vehicleYear,
+    vehicleMake: parsed.data.vehicleMake,
+    vehicleColor: parsed.data.vehicleColor,
+    vehiclePlate: parsed.data.vehiclePlate,
+  };
+
+  sendOrderConfirmationEmails(
+    {
+      id: order.id,
+      customerName: order.customerName,
+      customerEmail: order.customerEmail,
+      beerName: order.beerName,
+      kegSize: order.kegSize,
+      quantity: order.quantity,
+      pickupDate: order.pickupDate,
+      pickupTime: order.pickupTime,
+      pouringMethod: order.pouringMethod ?? "My own equipment",
+      totalAmount: Number(order.totalAmount),
+    },
+    receiptSummary,
+  ).catch((err) => req.log.error({ err }, "Failed to queue confirmation emails"));
+
+  res.status(201).json({
+    ...receipt,
+    createdAt: receipt.createdAt.toISOString(),
+    updatedAt: receipt.updatedAt.toISOString(),
+  });
 });
 
 router.post("/orders/:id/cancel", requireAuth, async (req, res): Promise<void> => {

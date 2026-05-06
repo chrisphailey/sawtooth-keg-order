@@ -297,6 +297,43 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /orders/{id}/customer-receipt:
+    post:
+      operationId: submitCustomerReceipt
+      tags: [orders]
+      summary: Customer submits ISP keg receipt as step 2 of order flow (public, once-only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerReceiptBody"
+      responses:
+        "201":
+          description: Receipt saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KegReceipt"
+        "400":
+          description: Validation error or receipt already submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   # Payment authorization
   /payments/authorize:
     post:
@@ -992,6 +1029,32 @@ components:
         kegSize:
           type: ["string", "null"]
         kegIdNumbers:
+          type: ["string", "null"]
+
+    CustomerReceiptBody:
+      type: object
+      properties:
+        purchaserDob:
+          type: ["string", "null"]
+        consumptionLocation:
+          type: ["string", "null"]
+        consumptionTime:
+          type: ["string", "null"]
+        consumptionDate:
+          type: ["string", "null"]
+        validIdNumber:
+          type: ["string", "null"]
+        vehicleYear:
+          type: ["string", "null"]
+        vehicleMake:
+          type: ["string", "null"]
+        vehicleColor:
+          type: ["string", "null"]
+        vehiclePlate:
+          type: ["string", "null"]
+        customerSignature:
+          type: ["string", "null"]
+        signedAt:
           type: ["string", "null"]
 
     SaveSignatureBody:

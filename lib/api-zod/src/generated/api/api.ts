@@ -362,6 +362,27 @@ export const CancelOrderResponse = zod.object({
 });
 
 /**
+ * @summary Customer submits ISP keg receipt as step 2 of order flow (public, once-only)
+ */
+export const SubmitCustomerReceiptParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SubmitCustomerReceiptBody = zod.object({
+  purchaserDob: zod.string().nullish(),
+  consumptionLocation: zod.string().nullish(),
+  consumptionTime: zod.string().nullish(),
+  consumptionDate: zod.string().nullish(),
+  validIdNumber: zod.string().nullish(),
+  vehicleYear: zod.string().nullish(),
+  vehicleMake: zod.string().nullish(),
+  vehicleColor: zod.string().nullish(),
+  vehiclePlate: zod.string().nullish(),
+  customerSignature: zod.string().nullish(),
+  signedAt: zod.string().nullish(),
+});
+
+/**
  * @summary Create a Clover payment pre-authorization
  */
 export const AuthorizePaymentBody = zod.object({

@@ -156,6 +156,8 @@ export default function PickupForms() {
     );
   }
 
+  const customerPreFilled = !!(existingReceipt.data && existingReceipt.data.purchaserDob);
+
   return (
     <AdminLayout>
       <div className="p-6 max-w-3xl">
@@ -164,7 +166,14 @@ export default function PickupForms() {
         </Link>
 
         <h1 className="text-2xl font-bold font-serif mb-2" data-testid="heading-pickup-forms">Idaho Keg Receipt</h1>
-        <p className="text-sm text-muted-foreground mb-6">Receipt for Sale of Beer in Kegs to Unlicensed Group or Individual</p>
+        <p className="text-sm text-muted-foreground mb-4">Receipt for Sale of Beer in Kegs to Unlicensed Group or Individual</p>
+
+        {customerPreFilled && (
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800" data-testid="banner-customer-prefilled">
+            <CheckCircle className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
+            <span><strong>Customer completed this form at order time.</strong> You may review and edit below, then re-sign if needed.</span>
+          </div>
+        )}
 
         {order.isLoading || existingReceipt.isLoading ? (
           <div className="space-y-4">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>
