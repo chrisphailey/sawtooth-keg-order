@@ -22,6 +22,7 @@ import type {
   CreateBeerBody,
   CreateKegReceiptBody,
   CreateOrderBody,
+  CreateOrderResponse,
   CustomerReceiptBody,
   DashboardSummary,
   ErrorResponse,
@@ -656,8 +657,8 @@ export const getCreateOrderUrl = () => {
 export const createOrder = async (
   createOrderBody: CreateOrderBody,
   options?: RequestInit,
-): Promise<Order> => {
-  return customFetch<Order>(getCreateOrderUrl(), {
+): Promise<CreateOrderResponse> => {
+  return customFetch<CreateOrderResponse>(getCreateOrderUrl(), {
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...options?.headers },

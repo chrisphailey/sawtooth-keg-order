@@ -215,6 +215,7 @@ export const GetOrderResponse = zod.object({
     kegBrand: zod.string().nullable(),
     kegSize: zod.string().nullable(),
     kegIdNumbers: zod.string().nullable(),
+    submittedByCustomer: zod.boolean(),
     completed: zod.boolean(),
     createdAt: zod.string(),
     updatedAt: zod.string(),
@@ -369,6 +370,7 @@ export const SubmitCustomerReceiptParams = zod.object({
 });
 
 export const SubmitCustomerReceiptBody = zod.object({
+  customerToken: zod.string(),
   purchaserDob: zod.string().nullish(),
   consumptionLocation: zod.string().nullish(),
   consumptionTime: zod.string().nullish(),
@@ -477,6 +479,7 @@ export const GetKegReceiptResponse = zod.object({
   kegBrand: zod.string().nullable(),
   kegSize: zod.string().nullable(),
   kegIdNumbers: zod.string().nullable(),
+  submittedByCustomer: zod.boolean(),
   completed: zod.boolean(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -539,6 +542,7 @@ export const CreateOrUpdateKegReceiptResponse = zod.object({
   kegBrand: zod.string().nullable(),
   kegSize: zod.string().nullable(),
   kegIdNumbers: zod.string().nullable(),
+  submittedByCustomer: zod.boolean(),
   completed: zod.boolean(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
@@ -582,6 +586,7 @@ export const SaveReceiptSignatureResponse = zod.object({
   kegBrand: zod.string().nullable(),
   kegSize: zod.string().nullable(),
   kegIdNumbers: zod.string().nullable(),
+  submittedByCustomer: zod.boolean(),
   completed: zod.boolean(),
   createdAt: zod.string(),
   updatedAt: zod.string(),

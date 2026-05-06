@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { Router, type IRouter } from "express";
 import { eq, desc } from "drizzle-orm";
 import { db, ordersTable, beersTable, pickupScheduleTable, paymentAuthorizationsTable, kegReceiptsTable } from "@workspace/db";
@@ -96,6 +97,7 @@ router.post("/orders", async (req, res): Promise<void> => {
       cloverPaymentId: parsed.data.cloverPaymentToken,
       cloverIdempotencyKey: parsed.data.idempotencyKey,
       totalAmount: String(totalAmount),
+      customerToken: randomUUID(),
     })
     .returning();
 
@@ -105,7 +107,7 @@ router.post("/orders", async (req, res): Promise<void> => {
     .set({ orderId: order.id })
     .where(eq(paymentAuthorizationsTable.idempotencyKey, parsed.data.idempotencyKey));
 
-  res.status(201).json(serializeOrder(order));
+  res.status(201).json({ ...serializeOrder(order), customerToken: order.customerToken ?? "" });
 });
 
 router.get("/orders/:id", requireAuth, async (req, res): Promise<void> => {
@@ -268,6 +270,11 @@ router.post("/orders/:id/customer-receipt", async (req, res): Promise<void> => {
     return;
   }
 
+  if (!order.customerToken || parsed.data.customerToken !== order.customerToken) {
+    res.status(403).json({ error: "Invalid or missing order token" });
+    return;
+  }
+
   const existing = await db
     .select()
     .from(kegReceiptsTable)
@@ -302,6 +309,7 @@ router.post("/orders/:id/customer-receipt", async (req, res): Promise<void> => {
       vehiclePlate: parsed.data.vehiclePlate ?? null,
       customerSignature: parsed.data.customerSignature ?? null,
       signedAt: parsed.data.signedAt ?? null,
+      submittedByCustomer: true,
       completed: !!(parsed.data.customerSignature),
     })
     .returning();

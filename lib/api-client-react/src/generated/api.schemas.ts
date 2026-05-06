@@ -92,6 +92,10 @@ export interface Order {
   updatedAt: string;
 }
 
+export type CreateOrderResponse = Order & {
+  customerToken: string;
+};
+
 export type OrderDetailStatus =
   (typeof OrderDetailStatus)[keyof typeof OrderDetailStatus];
 
@@ -162,6 +166,7 @@ export interface KegReceipt {
   kegSize: string | null;
   /** @nullable */
   kegIdNumbers: string | null;
+  submittedByCustomer: boolean;
   completed: boolean;
   createdAt: string;
   updatedAt: string;
@@ -317,6 +322,7 @@ export interface CreateKegReceiptBody {
 }
 
 export interface CustomerReceiptBody {
+  customerToken: string;
   /** @nullable */
   purchaserDob?: string | null;
   /** @nullable */

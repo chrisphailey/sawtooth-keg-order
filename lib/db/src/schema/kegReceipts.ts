@@ -29,6 +29,7 @@ export const kegReceiptsTable = pgTable("keg_receipts", {
   kegBrand: text("keg_brand"),
   kegSize: text("keg_size"),
   kegIdNumbers: text("keg_id_numbers"),
+  submittedByCustomer: boolean("submitted_by_customer").notNull().default(false),
   completed: boolean("completed").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

@@ -9,7 +9,7 @@ import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, CheckCircle, Printer } from "lucide-react";
 
 function ReceiptRow({ label, value }: { label: string; value?: string | null | boolean }) {
   if (value === undefined || value === null || value === "") return null;
@@ -53,6 +53,12 @@ export default function PickupReceipt() {
           </div>
         ) : (
           <div className="bg-white rounded-xl border p-8 space-y-6" data-testid="card-receipt">
+            {receipt.data.submittedByCustomer && (
+              <div className="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 print:hidden" data-testid="banner-customer-prefilled">
+                <CheckCircle className="h-4 w-4 mt-0.5 flex-shrink-0 text-green-600" />
+                <span><strong>Customer completed this form at order time.</strong> Fields below were pre-filled by the customer.</span>
+              </div>
+            )}
             <div className="text-center border-b pb-6">
               <h1 className="text-xl font-bold font-serif uppercase tracking-wide">Receipt for Sale of Beer in Kegs</h1>
               <p className="text-sm text-muted-foreground mt-1">to Unlicensed Group or Individual</p>

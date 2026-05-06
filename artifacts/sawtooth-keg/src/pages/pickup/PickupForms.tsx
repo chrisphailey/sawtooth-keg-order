@@ -156,7 +156,7 @@ export default function PickupForms() {
     );
   }
 
-  const customerPreFilled = !!(existingReceipt.data && existingReceipt.data.purchaserDob);
+  const customerPreFilled = !!(existingReceipt.data?.submittedByCustomer);
 
   return (
     <AdminLayout>

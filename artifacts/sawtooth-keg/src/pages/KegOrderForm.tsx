@@ -60,6 +60,7 @@ type IspFormValues = z.infer<typeof ispSchema>;
 
 interface OrderConfirmation {
   id: number;
+  customerToken: string;
   customerName: string;
   customerEmail: string;
   pickupDate: string;
@@ -181,6 +182,7 @@ export default function KegOrderForm() {
             onSuccess: (order) => {
               setOrderConfirmation({
                 id: order.id,
+                customerToken: order.customerToken,
                 customerName: order.customerName,
                 customerEmail: order.customerEmail,
                 pickupDate: order.pickupDate,
@@ -215,6 +217,7 @@ export default function KegOrderForm() {
           {
             id: orderConfirmation.id,
             data: {
+              customerToken: orderConfirmation.customerToken,
               purchaserDob: values.purchaserDob || null,
               consumptionLocation: values.consumptionLocation || null,
               consumptionDate: values.consumptionDate || null,

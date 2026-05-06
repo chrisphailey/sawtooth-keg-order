@@ -179,7 +179,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Order"
+                $ref: "#/components/schemas/CreateOrderResponse"
         "400":
           description: Validation error
           content:
@@ -686,6 +686,16 @@ components:
         - createdAt
         - updatedAt
 
+    CreateOrderResponse:
+      allOf:
+        - $ref: "#/components/schemas/Order"
+        - type: object
+          properties:
+            customerToken:
+              type: string
+          required:
+            - customerToken
+
     OrderDetail:
       type: object
       properties:
@@ -949,6 +959,8 @@ components:
           type: ["string", "null"]
         kegIdNumbers:
           type: ["string", "null"]
+        submittedByCustomer:
+          type: boolean
         completed:
           type: boolean
         createdAt:
@@ -981,6 +993,7 @@ components:
         - kegBrand
         - kegSize
         - kegIdNumbers
+        - submittedByCustomer
         - completed
         - createdAt
         - updatedAt
@@ -1034,6 +1047,8 @@ components:
     CustomerReceiptBody:
       type: object
       properties:
+        customerToken:
+          type: string
         purchaserDob:
           type: ["string", "null"]
         consumptionLocation:
@@ -1056,6 +1071,8 @@ components:
           type: ["string", "null"]
         signedAt:
           type: ["string", "null"]
+      required:
+        - customerToken
 
     SaveSignatureBody:
       type: object

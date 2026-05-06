@@ -70,7 +70,7 @@ function buildCustomerEmailHtml(order: OrderSummary, receipt: ReceiptSummary): s
   `.trim();
 }
 
-function buildAdminEmailHtml(order: OrderSummary): string {
+function buildAdminEmailHtml(order: OrderSummary, receiptUrl: string | null): string {
   return `
 <!DOCTYPE html>
 <html>
@@ -82,7 +82,8 @@ function buildAdminEmailHtml(order: OrderSummary): string {
   <p><strong>Pickup:</strong> ${order.pickupDate} at ${order.pickupTime}</p>
   <p><strong>Pouring Method:</strong> ${order.pouringMethod}</p>
   <p><strong>Total:</strong> $${order.totalAmount.toFixed(2)}</p>
-  <p>The customer has completed the ISP keg receipt form. View and manage this order in the admin dashboard.</p>
+  <p>The customer has completed the ISP keg receipt form.</p>
+  ${receiptUrl ? `<p><a href="${receiptUrl}" style="display:inline-block;background:hsl(28,90%,45%);color:white;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:bold;">View Receipt &amp; Manage Order</a></p><p style="font-size:12px;color:#888;">Or copy: ${receiptUrl}</p>` : "<p>Log in to the admin dashboard to view and manage this order.</p>"}
 </body>
 </html>
   `.trim();
@@ -101,8 +102,11 @@ export async function sendOrderConfirmationEmails(
       "Email mock (SMTP_HOST not set) — customer order confirmation would be sent here",
     );
     if (adminEmail) {
+      const baseUrl = process.env.APP_BASE_URL ??
+        (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null);
+      const receiptUrl = baseUrl ? `${baseUrl}/pickup/${order.id}/forms` : null;
       logger.info(
-        { orderId: order.id, adminEmail },
+        { orderId: order.id, adminEmail, receiptUrl },
         "Email mock — admin notification would be sent here",
       );
     }
@@ -130,11 +134,14 @@ export async function sendOrderConfirmationEmails(
     });
 
     if (adminEmail) {
+      const baseUrl = process.env.APP_BASE_URL ??
+        (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null);
+      const receiptUrl = baseUrl ? `${baseUrl}/pickup/${order.id}/forms` : null;
       await transporter.sendMail({
         from: fromAddress,
         to: adminEmail,
         subject: `New Keg Order #${order.id} — ${order.customerName}`,
-        html: buildAdminEmailHtml(order),
+        html: buildAdminEmailHtml(order, receiptUrl),
       });
     }
 
