@@ -323,16 +323,13 @@ export interface CreateKegReceiptBody {
 
 export interface CustomerReceiptBody {
   customerToken: string;
-  /** @nullable */
-  purchaserDob?: string | null;
-  /** @nullable */
-  consumptionLocation?: string | null;
+  purchaserDob: string;
+  consumptionLocation: string;
   /** @nullable */
   consumptionTime?: string | null;
   /** @nullable */
   consumptionDate?: string | null;
-  /** @nullable */
-  validIdNumber?: string | null;
+  validIdNumber: string;
   /** @nullable */
   vehicleYear?: string | null;
   /** @nullable */
@@ -341,10 +338,8 @@ export interface CustomerReceiptBody {
   vehicleColor?: string | null;
   /** @nullable */
   vehiclePlate?: string | null;
-  /** @nullable */
-  customerSignature?: string | null;
-  /** @nullable */
-  signedAt?: string | null;
+  customerSignature: string;
+  signedAt: string;
 }
 
 export interface SaveSignatureBody {

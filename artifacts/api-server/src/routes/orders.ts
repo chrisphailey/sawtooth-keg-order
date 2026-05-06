@@ -299,24 +299,24 @@ router.post("/orders/:id/customer-receipt", async (req, res): Promise<void> => {
       consumptionDate: parsed.data.consumptionDate ?? order.pickupDate,
       kegBrand: "Sawtooth Brewery",
       kegSize: order.kegSize,
-      purchaserDob: parsed.data.purchaserDob ?? null,
-      consumptionLocation: parsed.data.consumptionLocation ?? null,
+      purchaserDob: parsed.data.purchaserDob,
+      consumptionLocation: parsed.data.consumptionLocation,
       consumptionTime: parsed.data.consumptionTime ?? null,
-      validIdNumber: parsed.data.validIdNumber ?? null,
+      validIdNumber: parsed.data.validIdNumber,
       vehicleYear: parsed.data.vehicleYear ?? null,
       vehicleMake: parsed.data.vehicleMake ?? null,
       vehicleColor: parsed.data.vehicleColor ?? null,
       vehiclePlate: parsed.data.vehiclePlate ?? null,
-      customerSignature: parsed.data.customerSignature ?? null,
-      signedAt: parsed.data.signedAt ?? null,
+      customerSignature: parsed.data.customerSignature,
+      signedAt: parsed.data.signedAt,
       submittedByCustomer: true,
-      completed: !!(parsed.data.customerSignature),
+      completed: true,
     })
     .returning();
 
   const receiptSummary = {
     consumptionLocation: parsed.data.consumptionLocation,
-    consumptionDate: order.pickupDate,
+    consumptionDate: parsed.data.consumptionDate ?? order.pickupDate,
     consumptionTime: parsed.data.consumptionTime,
     purchaserDob: parsed.data.purchaserDob,
     validIdNumber: parsed.data.validIdNumber,
@@ -340,6 +340,7 @@ router.post("/orders/:id/customer-receipt", async (req, res): Promise<void> => {
       totalAmount: Number(order.totalAmount),
     },
     receiptSummary,
+    req.log,
   ).catch((err) => req.log.error({ err }, "Failed to queue confirmation emails"));
 
   res.status(201).json({

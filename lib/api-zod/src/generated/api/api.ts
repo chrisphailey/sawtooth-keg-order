@@ -371,17 +371,17 @@ export const SubmitCustomerReceiptParams = zod.object({
 
 export const SubmitCustomerReceiptBody = zod.object({
   customerToken: zod.string(),
-  purchaserDob: zod.string().nullish(),
-  consumptionLocation: zod.string().nullish(),
+  purchaserDob: zod.string(),
+  consumptionLocation: zod.string(),
   consumptionTime: zod.string().nullish(),
   consumptionDate: zod.string().nullish(),
-  validIdNumber: zod.string().nullish(),
+  validIdNumber: zod.string(),
   vehicleYear: zod.string().nullish(),
   vehicleMake: zod.string().nullish(),
   vehicleColor: zod.string().nullish(),
   vehiclePlate: zod.string().nullish(),
-  customerSignature: zod.string().nullish(),
-  signedAt: zod.string().nullish(),
+  customerSignature: zod.string(),
+  signedAt: zod.string(),
 });
 
 /**

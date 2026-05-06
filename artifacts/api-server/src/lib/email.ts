@@ -89,15 +89,19 @@ function buildAdminEmailHtml(order: OrderSummary, receiptUrl: string | null): st
   `.trim();
 }
 
+type RequestLog = { info: (data: Record<string, unknown>, msg: string) => void };
+
 export async function sendOrderConfirmationEmails(
   order: OrderSummary,
   receipt: ReceiptSummary,
+  reqLog?: RequestLog,
 ): Promise<void> {
+  const log = reqLog ?? logger;
   const smtpHost = process.env.SMTP_HOST;
   const adminEmail = process.env.ADMIN_EMAIL;
 
   if (!smtpHost) {
-    logger.info(
+    log.info(
       { orderId: order.id, customerEmail: order.customerEmail },
       "Email mock (SMTP_HOST not set) — customer order confirmation would be sent here",
     );
@@ -105,7 +109,7 @@ export async function sendOrderConfirmationEmails(
       const baseUrl = process.env.APP_BASE_URL ??
         (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null);
       const receiptUrl = baseUrl ? `${baseUrl}/pickup/${order.id}/forms` : null;
-      logger.info(
+      log.info(
         { orderId: order.id, adminEmail, receiptUrl },
         "Email mock — admin notification would be sent here",
       );

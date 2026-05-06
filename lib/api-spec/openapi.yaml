@@ -1050,15 +1050,15 @@ components:
         customerToken:
           type: string
         purchaserDob:
-          type: ["string", "null"]
+          type: string
         consumptionLocation:
-          type: ["string", "null"]
+          type: string
         consumptionTime:
           type: ["string", "null"]
         consumptionDate:
           type: ["string", "null"]
         validIdNumber:
-          type: ["string", "null"]
+          type: string
         vehicleYear:
           type: ["string", "null"]
         vehicleMake:
@@ -1068,11 +1068,16 @@ components:
         vehiclePlate:
           type: ["string", "null"]
         customerSignature:
-          type: ["string", "null"]
+          type: string
         signedAt:
-          type: ["string", "null"]
+          type: string
       required:
         - customerToken
+        - purchaserDob
+        - consumptionLocation
+        - validIdNumber
+        - customerSignature
+        - signedAt
 
     SaveSignatureBody:
       type: object

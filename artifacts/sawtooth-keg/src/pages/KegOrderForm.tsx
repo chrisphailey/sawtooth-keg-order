@@ -45,11 +45,11 @@ const orderSchema = z.object({
 type OrderFormValues = z.infer<typeof orderSchema>;
 
 const ispSchema = z.object({
-  purchaserDob: z.string().optional(),
-  consumptionLocation: z.string().optional(),
+  purchaserDob: z.string().min(1, "Date of birth is required"),
+  consumptionLocation: z.string().min(1, "Consumption location is required"),
   consumptionDate: z.string().optional(),
   consumptionTime: z.string().optional(),
-  validIdNumber: z.string().optional(),
+  validIdNumber: z.string().min(1, "Valid ID number is required"),
   vehicleYear: z.string().optional(),
   vehicleMake: z.string().optional(),
   vehicleColor: z.string().optional(),
@@ -213,6 +213,11 @@ export default function KegOrderForm() {
     if (!orderConfirmation) return;
     setIspError(null);
 
+    if (!signature) {
+      setIspError("A signature is required to complete the state form.");
+      return;
+    }
+
     try {
       await new Promise<void>((resolve, reject) => {
         submitCustomerReceipt.mutate(
@@ -220,17 +225,17 @@ export default function KegOrderForm() {
             id: orderConfirmation.id,
             data: {
               customerToken: orderConfirmation.customerToken,
-              purchaserDob: values.purchaserDob || null,
-              consumptionLocation: values.consumptionLocation || null,
+              purchaserDob: values.purchaserDob,
+              consumptionLocation: values.consumptionLocation,
               consumptionDate: values.consumptionDate || null,
               consumptionTime: values.consumptionTime || null,
-              validIdNumber: values.validIdNumber || null,
+              validIdNumber: values.validIdNumber,
               vehicleYear: values.vehicleYear || null,
               vehicleMake: values.vehicleMake || null,
               vehicleColor: values.vehicleColor || null,
               vehiclePlate: values.vehiclePlate || null,
-              customerSignature: signature || null,
-              signedAt: signature ? new Date().toISOString() : null,
+              customerSignature: signature,
+              signedAt: new Date().toISOString(),
             },
           },
           {
