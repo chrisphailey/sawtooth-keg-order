@@ -152,6 +152,8 @@ export async function sendOrderConfirmationEmails(
         subject: `New Keg Order #${order.id} — ${order.customerName}`,
         html: buildAdminEmailHtml(order, receiptUrl),
       });
+    } else {
+      logger.info({ orderId: order.id }, "ADMIN_EMAIL not set — admin notification skipped");
     }
 
     logger.info({ orderId: order.id }, "Order confirmation emails sent");

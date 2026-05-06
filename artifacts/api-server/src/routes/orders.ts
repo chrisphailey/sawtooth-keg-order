@@ -281,7 +281,7 @@ router.post("/orders/:id/customer-receipt", async (req, res): Promise<void> => {
     .where(eq(kegReceiptsTable.orderId, params.data.id));
 
   if (existing.length > 0) {
-    res.status(400).json({ error: "Receipt already submitted for this order" });
+    res.status(409).json({ error: "Receipt already submitted for this order" });
     return;
   }
 
