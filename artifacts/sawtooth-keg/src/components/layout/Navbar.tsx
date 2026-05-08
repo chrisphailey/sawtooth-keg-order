@@ -29,7 +29,7 @@ export function Navbar() {
             <Link href="/admin" className="text-sm font-medium hover:text-primary transition-colors">
               Dashboard
             </Link>
-            <Button variant="ghost" size="sm" onClick={() => signOut()} data-testid="button-signout">
+            <Button variant="ghost" size="sm" onClick={() => signOut({ redirectUrl: "/" })} data-testid="button-signout">
               Sign Out
             </Button>
           </Show>

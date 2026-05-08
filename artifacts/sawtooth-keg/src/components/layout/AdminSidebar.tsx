@@ -57,7 +57,7 @@ export function AdminSidebar() {
         <Button 
           variant="ghost" 
           className="w-full justify-start text-sidebar-foreground hover:text-sidebar-foreground" 
-          onClick={() => signOut()}
+          onClick={() => signOut({ redirectUrl: "/" })}
           data-testid="button-admin-signout"
         >
           <LogOut className="h-4 w-4 mr-2" />
