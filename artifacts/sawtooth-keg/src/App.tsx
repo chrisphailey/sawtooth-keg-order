@@ -105,30 +105,24 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+// DEMO MODE: auth bypassed — re-enable by restoring Show when="signed-in/out" guards
 function HomeRedirect() {
-  return (
-    <>
-      <Show when="signed-in">
-        <Redirect to="/admin" />
-      </Show>
-      <Show when="signed-out">
-        <Landing />
-      </Show>
-    </>
-  );
+  return <Redirect to="/admin" />;
 }
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
-  return (
-    <>
-      <Show when="signed-in">
-        <Component />
-      </Show>
-      <Show when="signed-out">
-        <Redirect to="/sign-in" />
-      </Show>
-    </>
-  );
+  return <Component />;
+  // Re-enable auth by replacing the line above with:
+  // return (
+  //   <>
+  //     <Show when="signed-in">
+  //       <Component />
+  //     </Show>
+  //     <Show when="signed-out">
+  //       <Redirect to="/sign-in" />
+  //     </Show>
+  //   </>
+  // );
 }
 
 function SignInPage() {
