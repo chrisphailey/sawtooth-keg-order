@@ -38,7 +38,7 @@ export default function Landing() {
               </Button>
             </Link>
             
-            <Link href="/sign-in" className="w-full sm:w-auto">
+            <Link href="/admin" className="w-full sm:w-auto">
               <Button variant="outline" size="lg" className="w-full text-lg h-14 px-8 rounded-full bg-white border-stone-300 hover:bg-stone-100" data-testid="link-hero-staff">
                 Staff Access
               </Button>

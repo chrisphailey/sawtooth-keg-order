@@ -107,7 +107,7 @@ function ClerkQueryClientCacheInvalidator() {
 
 // DEMO MODE: auth bypassed — re-enable by restoring Show when="signed-in/out" guards
 function HomeRedirect() {
-  return <Redirect to="/admin" />;
+  return <Landing />;
 }
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
