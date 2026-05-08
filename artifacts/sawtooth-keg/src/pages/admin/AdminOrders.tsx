@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,9 +11,10 @@ import {
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, Loader2, RotateCcw } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, RotateCcw, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type StatusFilter = "all" | "pending" | "confirmed" | "completed" | "cancelled";
@@ -36,6 +37,7 @@ export default function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
   const [returningId, setReturningId] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -44,6 +46,19 @@ export default function AdminOrders() {
   const confirmOrder = useConfirmOrder();
   const cancelOrder = useCancelOrder();
   const returnOrder = useReturnOrder();
+
+  const filteredOrders = useMemo(() => {
+    if (!orders.data) return [];
+    const q = search.trim().toLowerCase();
+    if (!q) return orders.data;
+    return orders.data.filter((o) =>
+      o.customerName.toLowerCase().includes(q) ||
+      o.customerEmail.toLowerCase().includes(q) ||
+      o.beerName.toLowerCase().includes(q) ||
+      o.pickupDate.includes(q) ||
+      String(o.id).includes(q)
+    );
+  }, [orders.data, search]);
 
   const handleConfirm = (id: number) => {
     setConfirmingId(id);
@@ -92,15 +107,27 @@ export default function AdminOrders() {
       <div className="p-6 max-w-6xl">
         <h1 className="text-2xl font-bold font-serif mb-6" data-testid="heading-orders">Orders</h1>
 
-        <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)} className="mb-4">
-          <TabsList data-testid="tabs-status-filter">
-            <TabsTrigger value="all" data-testid="tab-all">All</TabsTrigger>
-            <TabsTrigger value="pending" data-testid="tab-pending">Pending</TabsTrigger>
-            <TabsTrigger value="confirmed" data-testid="tab-confirmed">Confirmed</TabsTrigger>
-            <TabsTrigger value="completed" data-testid="tab-completed">Completed</TabsTrigger>
-            <TabsTrigger value="cancelled" data-testid="tab-cancelled">Cancelled</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+            <TabsList data-testid="tabs-status-filter">
+              <TabsTrigger value="all" data-testid="tab-all">All</TabsTrigger>
+              <TabsTrigger value="pending" data-testid="tab-pending">Pending</TabsTrigger>
+              <TabsTrigger value="confirmed" data-testid="tab-confirmed">Confirmed</TabsTrigger>
+              <TabsTrigger value="completed" data-testid="tab-completed">Completed</TabsTrigger>
+              <TabsTrigger value="cancelled" data-testid="tab-cancelled">Cancelled</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          <div className="relative sm:ml-auto sm:w-64">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Search by name, email, beer…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 h-9 text-sm"
+              data-testid="input-search"
+            />
+          </div>
+        </div>
 
         <Card>
           <CardContent className="p-0">
@@ -108,7 +135,7 @@ export default function AdminOrders() {
               <div className="p-4 space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 rounded" />)}
               </div>
-            ) : orders.data && orders.data.length > 0 ? (
+            ) : filteredOrders.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm" data-testid="table-orders">
                   <thead>
@@ -124,7 +151,7 @@ export default function AdminOrders() {
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.data.map((order) => (
+                    {filteredOrders.map((order) => (
                       <tr key={order.id} className="border-b last:border-0 hover:bg-muted/20" data-testid={`row-order-${order.id}`}>
                         <td className="px-4 py-3 text-muted-foreground">#{order.id}</td>
                         <td className="px-4 py-3">
@@ -204,7 +231,9 @@ export default function AdminOrders() {
                 </table>
               </div>
             ) : (
-              <div className="p-10 text-center text-muted-foreground">No orders found.</div>
+              <div className="p-10 text-center text-muted-foreground">
+                {search.trim() ? `No orders match "${search.trim()}".` : "No orders found."}
+              </div>
             )}
           </CardContent>
         </Card>
