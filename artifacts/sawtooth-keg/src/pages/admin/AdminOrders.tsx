@@ -5,6 +5,7 @@ import {
   useListOrders,
   useConfirmOrder,
   useCancelOrder,
+  useReturnOrder,
   getListOrdersQueryKey,
 } from "@workspace/api-client-react";
 import { AdminLayout } from "@/components/layout/AdminLayout";
@@ -12,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 type StatusFilter = "all" | "pending" | "confirmed" | "completed" | "cancelled";
@@ -34,6 +35,7 @@ const PAYMENT_COLORS: Record<string, string> = {
 export default function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [confirmingId, setConfirmingId] = useState<number | null>(null);
+  const [returningId, setReturningId] = useState<number | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -41,6 +43,7 @@ export default function AdminOrders() {
   const orders = useListOrders(params, { query: { queryKey: getListOrdersQueryKey(params) } });
   const confirmOrder = useConfirmOrder();
   const cancelOrder = useCancelOrder();
+  const returnOrder = useReturnOrder();
 
   const handleConfirm = (id: number) => {
     setConfirmingId(id);
@@ -65,6 +68,22 @@ export default function AdminOrders() {
         queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() });
       },
       onError: () => toast({ title: "Failed to cancel", variant: "destructive" }),
+    });
+  };
+
+  const handleReturn = (id: number) => {
+    if (!confirm("Mark keg as returned and refund the $30 deposit?")) return;
+    setReturningId(id);
+    returnOrder.mutate({ id }, {
+      onSuccess: () => {
+        toast({ title: "Keg returned", description: "$30 deposit has been refunded." });
+        queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() });
+      },
+      onError: (err) => {
+        const msg = err instanceof Error ? err.message : "Failed to process return";
+        toast({ title: "Return failed", description: msg, variant: "destructive" });
+      },
+      onSettled: () => setReturningId(null),
     });
   };
 
@@ -147,6 +166,24 @@ export default function AdminOrders() {
                                 {confirmingId === order.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3 mr-1" />}
                                 Confirm
                               </Button>
+                            )}
+                            {order.status === "confirmed" && order.paymentStatus === "captured" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs text-purple-700 border-purple-300 hover:bg-purple-50"
+                                disabled={returningId === order.id}
+                                onClick={() => handleReturn(order.id)}
+                                data-testid={`button-return-${order.id}`}
+                              >
+                                {returningId === order.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3 mr-1" />}
+                                Return
+                              </Button>
+                            )}
+                            {order.status === "completed" && order.paymentStatus === "refunded" && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                                <RotateCcw className="h-3 w-3" /> Deposit Refunded
+                              </span>
                             )}
                             {(order.status === "pending" || order.status === "confirmed") && (
                               <Button

@@ -10,11 +10,12 @@ import {
   UpdateOrderBody,
   ConfirmOrderParams,
   CancelOrderParams,
+  ReturnOrderParams,
   SubmitCustomerReceiptParams,
   SubmitCustomerReceiptBody,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
-import { capturePayment } from "../lib/clover";
+import { capturePayment, refundPayment } from "../lib/clover";
 import { sendOrderConfirmationEmails } from "../lib/email";
 
 const router: IRouter = Router();
@@ -361,6 +362,61 @@ router.post("/orders/:id/customer-receipt", async (req, res): Promise<void> => {
     createdAt: receipt.createdAt.toISOString(),
     updatedAt: receipt.updatedAt.toISOString(),
   });
+});
+
+router.post("/orders/:id/return", requireAuth, async (req, res): Promise<void> => {
+  const params = ReturnOrderParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [order] = await db
+    .select()
+    .from(ordersTable)
+    .where(eq(ordersTable.id, params.data.id));
+
+  if (!order) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+
+  if (order.status !== "confirmed" || order.paymentStatus !== "captured") {
+    res.status(400).json({ error: "Order must be confirmed with a captured payment to process a return" });
+    return;
+  }
+
+  if (!order.cloverPaymentId) {
+    res.status(400).json({ error: "No payment found for this order" });
+    return;
+  }
+
+  try {
+    const refundIdempotencyKey = `refund_${order.id}_${Date.now()}`;
+    await refundPayment({
+      paymentId: order.cloverPaymentId,
+      amount: Math.round(Number(order.depositAmount) * 100),
+      idempotencyKey: refundIdempotencyKey,
+    });
+
+    const [returnedOrder] = await db
+      .update(ordersTable)
+      .set({ status: "completed", paymentStatus: "refunded", paymentError: null })
+      .where(eq(ordersTable.id, order.id))
+      .returning();
+
+    res.json(serializeOrder(returnedOrder));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Refund failed";
+    req.log.error({ err }, "Deposit refund failed");
+
+    await db
+      .update(ordersTable)
+      .set({ paymentError: message })
+      .where(eq(ordersTable.id, order.id));
+
+    res.status(400).json({ error: message });
+  }
 });
 
 router.post("/orders/:id/cancel", requireAuth, async (req, res): Promise<void> => {

@@ -363,6 +363,45 @@ export const CancelOrderResponse = zod.object({
 });
 
 /**
+ * @summary Mark keg returned and refund deposit (admin)
+ */
+export const ReturnOrderParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ReturnOrderResponse = zod.object({
+  id: zod.number(),
+  customerName: zod.string(),
+  customerEmail: zod.string(),
+  customerPhone: zod.string(),
+  pickupDate: zod.string(),
+  pickupTime: zod.string(),
+  beerId: zod.number(),
+  beerName: zod.string(),
+  kegSize: zod.string(),
+  quantity: zod.number(),
+  depositAmount: zod.number(),
+  pouringMethod: zod.string(),
+  partyTapNeeded: zod.boolean(),
+  co2Needed: zod.boolean(),
+  rentalFee: zod.number(),
+  notes: zod.string().nullable(),
+  status: zod.enum(["pending", "confirmed", "cancelled", "completed"]),
+  paymentStatus: zod.enum([
+    "pending",
+    "authorized",
+    "captured",
+    "failed",
+    "refunded",
+  ]),
+  cloverPaymentId: zod.string().nullable(),
+  totalAmount: zod.number(),
+  paymentError: zod.string().nullable(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
  * @summary Customer submits ISP keg receipt as step 2 of order flow (public, once-only)
  */
 export const SubmitCustomerReceiptParams = zod.object({

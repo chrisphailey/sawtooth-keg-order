@@ -1074,6 +1074,90 @@ export const useCancelOrder = <
 };
 
 /**
+ * @summary Mark keg returned and refund deposit (admin)
+ */
+export const getReturnOrderUrl = (id: number) => {
+  return `/api/orders/${id}/return`;
+};
+
+export const returnOrder = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Order> => {
+  return customFetch<Order>(getReturnOrderUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getReturnOrderMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof returnOrder>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof returnOrder>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["returnOrder"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof returnOrder>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return returnOrder(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReturnOrderMutationResult = NonNullable<
+  Awaited<ReturnType<typeof returnOrder>>
+>;
+
+export type ReturnOrderMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Mark keg returned and refund deposit (admin)
+ */
+export const useReturnOrder = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof returnOrder>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof returnOrder>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getReturnOrderMutationOptions(options));
+};
+
+/**
  * @summary Customer submits ISP keg receipt as step 2 of order flow (public, once-only)
  */
 export const getSubmitCustomerReceiptUrl = (id: number) => {

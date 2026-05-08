@@ -297,6 +297,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /orders/{id}/return:
+    post:
+      operationId: returnOrder
+      tags: [orders]
+      summary: Mark keg returned and refund deposit (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Keg returned and deposit refunded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Order not eligible for return or refund failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /orders/{id}/customer-receipt:
     post:
       operationId: submitCustomerReceipt
