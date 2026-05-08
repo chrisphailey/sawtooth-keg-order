@@ -177,7 +177,7 @@ export default function AdminOrders() {
                                 data-testid={`button-return-${order.id}`}
                               >
                                 {returningId === order.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3 mr-1" />}
-                                Return
+                                Return Keg & Refund
                               </Button>
                             )}
                             {order.status === "completed" && order.paymentStatus === "refunded" && (

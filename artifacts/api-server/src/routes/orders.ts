@@ -392,7 +392,7 @@ router.post("/orders/:id/return", requireAuth, async (req, res): Promise<void> =
   }
 
   try {
-    const refundIdempotencyKey = `refund_${order.id}_${Date.now()}`;
+    const refundIdempotencyKey = `refund_${order.id}`;
     await refundPayment({
       paymentId: order.cloverPaymentId,
       amount: Math.round(Number(order.depositAmount) * 100),
