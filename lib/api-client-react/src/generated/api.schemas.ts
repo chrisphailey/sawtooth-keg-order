@@ -98,7 +98,7 @@ export interface Order {
   totalAmount: number;
   /** @nullable */
   paymentError: string | null;
-  items: OrderItem[];
+  items?: OrderItem[];
   createdAt: string;
   updatedAt: string;
 }

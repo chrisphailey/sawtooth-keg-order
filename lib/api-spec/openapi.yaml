@@ -756,7 +756,6 @@ components:
         - cloverPaymentId
         - totalAmount
         - paymentError
-        - items
         - createdAt
         - updatedAt
 

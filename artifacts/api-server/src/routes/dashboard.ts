@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
-import { desc, sql } from "drizzle-orm";
-import { db, ordersTable, pickupScheduleTable } from "@workspace/db";
+import { desc, inArray } from "drizzle-orm";
+import { db, ordersTable, pickupScheduleTable, orderItemsTable } from "@workspace/db";
 import { GetRecentOrdersQueryParams } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 
@@ -51,11 +51,19 @@ router.get("/dashboard/recent-orders", requireAuth, async (req, res): Promise<vo
     .orderBy(desc(ordersTable.createdAt))
     .limit(limit);
 
+  const orderIds = orders.map((o) => o.id);
+  const allItems = orderIds.length > 0
+    ? await db.select().from(orderItemsTable).where(inArray(orderItemsTable.orderId, orderIds))
+    : [];
+
   res.json(
     orders.map((o) => ({
       ...o,
       depositAmount: Number(o.depositAmount),
       totalAmount: Number(o.totalAmount),
+      items: allItems
+        .filter((i) => i.orderId === o.id)
+        .map((i) => ({ ...i, unitPrice: Number(i.unitPrice) })),
     })),
   );
 });
