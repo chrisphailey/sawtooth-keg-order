@@ -132,6 +132,17 @@ export const ListOrdersResponseItem = zod.object({
   cloverPaymentId: zod.string().nullable(),
   totalAmount: zod.number(),
   paymentError: zod.string().nullable(),
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      orderId: zod.number(),
+      beerId: zod.number(),
+      beerName: zod.string(),
+      kegSize: zod.string(),
+      unitPrice: zod.number(),
+      quantity: zod.number(),
+    }),
+  ),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -140,14 +151,21 @@ export const ListOrdersResponse = zod.array(ListOrdersResponseItem);
 /**
  * @summary Submit a keg order (public)
  */
+
 export const CreateOrderBody = zod.object({
   customerName: zod.string(),
   customerEmail: zod.string(),
   customerPhone: zod.string(),
   pickupDate: zod.string(),
   pickupTime: zod.string(),
-  beerId: zod.number(),
-  quantity: zod.number(),
+  items: zod
+    .array(
+      zod.object({
+        beerId: zod.number(),
+        quantity: zod.number(),
+      }),
+    )
+    .min(1),
   pouringMethod: zod.string(),
   notes: zod.string().nullish(),
   cloverPaymentToken: zod.string(),
@@ -189,6 +207,17 @@ export const GetOrderResponse = zod.object({
   cloverPaymentId: zod.string().nullable(),
   totalAmount: zod.number(),
   paymentError: zod.string().nullable(),
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      orderId: zod.number(),
+      beerId: zod.number(),
+      beerName: zod.string(),
+      kegSize: zod.string(),
+      unitPrice: zod.number(),
+      quantity: zod.number(),
+    }),
+  ),
   receipt: zod.object({
     id: zod.number(),
     orderId: zod.number(),
@@ -280,6 +309,17 @@ export const UpdateOrderResponse = zod.object({
   cloverPaymentId: zod.string().nullable(),
   totalAmount: zod.number(),
   paymentError: zod.string().nullable(),
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      orderId: zod.number(),
+      beerId: zod.number(),
+      beerName: zod.string(),
+      kegSize: zod.string(),
+      unitPrice: zod.number(),
+      quantity: zod.number(),
+    }),
+  ),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -319,6 +359,17 @@ export const ConfirmOrderResponse = zod.object({
   cloverPaymentId: zod.string().nullable(),
   totalAmount: zod.number(),
   paymentError: zod.string().nullable(),
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      orderId: zod.number(),
+      beerId: zod.number(),
+      beerName: zod.string(),
+      kegSize: zod.string(),
+      unitPrice: zod.number(),
+      quantity: zod.number(),
+    }),
+  ),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -358,6 +409,17 @@ export const CancelOrderResponse = zod.object({
   cloverPaymentId: zod.string().nullable(),
   totalAmount: zod.number(),
   paymentError: zod.string().nullable(),
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      orderId: zod.number(),
+      beerId: zod.number(),
+      beerName: zod.string(),
+      kegSize: zod.string(),
+      unitPrice: zod.number(),
+      quantity: zod.number(),
+    }),
+  ),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -397,6 +459,17 @@ export const ReturnOrderResponse = zod.object({
   cloverPaymentId: zod.string().nullable(),
   totalAmount: zod.number(),
   paymentError: zod.string().nullable(),
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      orderId: zod.number(),
+      beerId: zod.number(),
+      beerName: zod.string(),
+      kegSize: zod.string(),
+      unitPrice: zod.number(),
+      quantity: zod.number(),
+    }),
+  ),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -680,6 +753,17 @@ export const GetRecentOrdersResponseItem = zod.object({
   cloverPaymentId: zod.string().nullable(),
   totalAmount: zod.number(),
   paymentError: zod.string().nullable(),
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      orderId: zod.number(),
+      beerId: zod.number(),
+      beerName: zod.string(),
+      kegSize: zod.string(),
+      unitPrice: zod.number(),
+      quantity: zod.number(),
+    }),
+  ),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });

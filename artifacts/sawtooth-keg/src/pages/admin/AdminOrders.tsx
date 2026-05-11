@@ -161,8 +161,17 @@ export default function AdminOrders() {
                           <div className="text-xs text-muted-foreground">{order.customerEmail}</div>
                         </td>
                         <td className="px-4 py-3">
-                          <div>{order.beerName}</div>
-                          <div className="text-xs text-muted-foreground">{order.kegSize} × {order.quantity}</div>
+                          {order.items && order.items.length > 1 ? (
+                            <>
+                              <div>Multiple kegs ({order.items.length})</div>
+                              <div className="text-xs text-muted-foreground">{order.quantity} total</div>
+                            </>
+                          ) : (
+                            <>
+                              <div>{order.beerName}</div>
+                              <div className="text-xs text-muted-foreground">{order.kegSize} × {order.quantity}</div>
+                            </>
+                          )}
                         </td>
                         <td className="px-4 py-3 text-muted-foreground">
                           {order.pickupDate}<br/>

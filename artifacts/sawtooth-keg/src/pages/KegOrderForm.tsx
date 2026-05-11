@@ -17,7 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SignaturePad } from "@/components/SignaturePad";
-import { CheckCircle, Loader2, FileText } from "lucide-react";
+import { CheckCircle, Loader2, FileText, PlusCircle, Trash2 } from "lucide-react";
 
 const POURING_OPTIONS = [
   { label: "My own equipment", fee: 0 },
@@ -27,6 +27,13 @@ const POURING_OPTIONS = [
   { label: "Draft Trailer Rental ($125/day + $10 a mile both directions)", fee: 125 },
 ] as const;
 
+const DEPOSIT_PER_KEG = 30;
+
+interface KegLineItem {
+  beerId: number;
+  quantity: number;
+}
+
 const orderSchema = z.object({
   customerName: z.string().min(2, "Name is required"),
   customerEmail: z.string().email("Valid email required"),
@@ -34,8 +41,6 @@ const orderSchema = z.object({
   returnDate: z.string().min(1, "Return date required"),
   pickupDate: z.string().min(1, "Pickup date required"),
   pickupTime: z.string().min(1, "Pickup time required"),
-  beerId: z.coerce.number().min(1, "Select a beer"),
-  quantity: z.coerce.number().min(1).max(10),
   pouringMethod: z.string().min(1, "Select how you will pour the beer"),
   notes: z.string().optional(),
   cardNumber: z.string().min(13, "Card number required").max(19),
@@ -58,6 +63,13 @@ const ispSchema = z.object({
 });
 type IspFormValues = z.infer<typeof ispSchema>;
 
+interface OrderConfirmationItem {
+  beerName: string;
+  kegSize: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 interface OrderConfirmation {
   id: number;
   customerToken: string;
@@ -66,11 +78,10 @@ interface OrderConfirmation {
   customerPhone: string;
   pickupDate: string;
   pickupTime: string;
-  beerName: string;
-  kegSize: string;
-  quantity: number;
+  items: OrderConfirmationItem[];
   pouringMethod: string;
   totalAmount: number;
+  depositAmount: number;
 }
 
 function StepIndicator({ step }: { step: 1 | 2 }) {
@@ -98,6 +109,8 @@ export default function KegOrderForm() {
   const [signature, setSignature] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [ispError, setIspError] = useState<string | null>(null);
+  const [kegItems, setKegItems] = useState<KegLineItem[]>([{ beerId: 0, quantity: 1 }]);
+  const [kegItemsError, setKegItemsError] = useState<string | null>(null);
 
   const beers = useListBeers({ availableOnly: true });
   const authorizePayment = useAuthorizePayment();
@@ -113,8 +126,6 @@ export default function KegOrderForm() {
       returnDate: "",
       pickupDate: "",
       pickupTime: "12:00",
-      beerId: 0,
-      quantity: 1,
       pouringMethod: "",
       notes: "",
       cardNumber: "",
@@ -139,17 +150,55 @@ export default function KegOrderForm() {
     },
   });
 
-  const selectedBeerId = orderForm.watch("beerId");
-  const quantity = orderForm.watch("quantity");
   const pouringMethod = orderForm.watch("pouringMethod");
-  const selectedBeer = beers.data?.find((b) => b.id === Number(selectedBeerId));
   const selectedPouring = POURING_OPTIONS.find((o) => o.label === pouringMethod);
-  const beerTotal = selectedBeer ? Number(selectedBeer.price) * quantity : 0;
   const rentalFee = selectedPouring?.fee ?? 0;
-  const depositAmount = 30;
+
+  const beerMap = new Map((beers.data ?? []).map((b) => [b.id, b]));
+
+  // Compute totals from keg items
+  const beerTotal = kegItems.reduce((sum, item) => {
+    const beer = beerMap.get(item.beerId);
+    if (!beer || item.beerId === 0) return sum;
+    return sum + Number(beer.price) * item.quantity;
+  }, 0);
+  const totalKegCount = kegItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  const depositAmount = DEPOSIT_PER_KEG * totalKegCount;
   const total = beerTotal + depositAmount + rentalFee;
 
+  const updateKegItem = (index: number, field: keyof KegLineItem, value: number) => {
+    setKegItems((prev) => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
+    setKegItemsError(null);
+  };
+
+  const addKegItem = () => {
+    setKegItems((prev) => [...prev, { beerId: 0, quantity: 1 }]);
+  };
+
+  const removeKegItem = (index: number) => {
+    setKegItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const validateKegItems = (): boolean => {
+    if (kegItems.length === 0) {
+      setKegItemsError("Add at least one keg to your order.");
+      return false;
+    }
+    for (const item of kegItems) {
+      if (!item.beerId || item.beerId === 0) {
+        setKegItemsError("Please select a beer for each keg row.");
+        return false;
+      }
+      if (!item.quantity || item.quantity < 1) {
+        setKegItemsError("Each keg must have a quantity of at least 1.");
+        return false;
+      }
+    }
+    return true;
+  };
+
   const onOrderSubmit = async (values: OrderFormValues) => {
+    if (!validateKegItems()) return;
     setSubmitError(null);
     const idempotencyKey = crypto.randomUUID();
     const amountCents = Math.round(total * 100);
@@ -174,8 +223,7 @@ export default function KegOrderForm() {
               customerPhone: values.customerPhone,
               pickupDate: values.pickupDate,
               pickupTime: values.pickupTime,
-              beerId: Number(values.beerId),
-              quantity: values.quantity,
+              items: kegItems.map((item) => ({ beerId: item.beerId, quantity: item.quantity })),
               pouringMethod: values.pouringMethod,
               notes: values.notes || null,
               cloverPaymentToken: auth.cloverPaymentId,
@@ -184,6 +232,12 @@ export default function KegOrderForm() {
           },
           {
             onSuccess: (order) => {
+              const confirmationItems: OrderConfirmationItem[] = (order.items ?? []).map((i) => ({
+                beerName: i.beerName,
+                kegSize: i.kegSize,
+                quantity: i.quantity,
+                unitPrice: i.unitPrice,
+              }));
               setOrderConfirmation({
                 id: order.id,
                 customerToken: order.customerToken,
@@ -192,11 +246,10 @@ export default function KegOrderForm() {
                 customerPhone: order.customerPhone,
                 pickupDate: order.pickupDate,
                 pickupTime: order.pickupTime,
-                beerName: order.beerName,
-                kegSize: order.kegSize,
-                quantity: order.quantity,
+                items: confirmationItems,
                 pouringMethod: order.pouringMethod,
                 totalAmount: order.totalAmount,
+                depositAmount: order.depositAmount,
               });
               ispForm.setValue("consumptionDate", order.pickupDate);
               setStep(2);
@@ -267,7 +320,7 @@ export default function KegOrderForm() {
               A confirmation email has been sent to <strong>{orderConfirmation.customerEmail}</strong>. {"We'll reach out to confirm your pickup."}
             </p>
             <p className="text-sm text-muted-foreground border-t pt-4 w-full">
-              A ${depositAmount} deposit has been pre-authorized. It will be captured when we confirm your order.
+              A ${orderConfirmation.depositAmount.toFixed(2)} deposit has been pre-authorized. It will be captured when we confirm your order.
             </p>
             <Button
               variant="outline"
@@ -275,6 +328,7 @@ export default function KegOrderForm() {
                 setStep(1);
                 setOrderConfirmation(null);
                 setSignature(null);
+                setKegItems([{ beerId: 0, quantity: 1 }]);
                 orderForm.reset();
                 ispForm.reset();
               }}
@@ -303,10 +357,15 @@ export default function KegOrderForm() {
             <CardContent className="pt-4 pb-3">
               <div className="flex items-start gap-3">
                 <FileText className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div>
+                <div className="min-w-0">
                   <p className="text-sm font-semibold">Order #{orderConfirmation.id} received!</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    {orderConfirmation.beerName} — {orderConfirmation.kegSize} x {orderConfirmation.quantity} · Pickup {orderConfirmation.pickupDate} at {orderConfirmation.pickupTime}
+                  {orderConfirmation.items.map((item, i) => (
+                    <p key={i} className="text-sm text-muted-foreground mt-0.5">
+                      {item.beerName} — {item.kegSize} × {item.quantity}
+                    </p>
+                  ))}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Pickup {orderConfirmation.pickupDate} at {orderConfirmation.pickupTime}
                   </p>
                 </div>
               </div>
@@ -510,39 +569,79 @@ export default function KegOrderForm() {
             </Card>
 
             <Card>
-              <CardHeader><CardTitle className="text-base">Keg Selection</CardTitle></CardHeader>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Keg Selection</CardTitle>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addKegItem}
+                    className="h-8 text-xs gap-1.5"
+                    data-testid="button-add-keg"
+                  >
+                    <PlusCircle className="h-3.5 w-3.5" />
+                    Add Keg
+                  </Button>
+                </div>
+              </CardHeader>
               <CardContent className="space-y-4">
                 {beers.isLoading ? (
                   <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading beers...</div>
                 ) : (
-                  <FormField control={orderForm.control} name="beerId" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Beer / Keg Style</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value ? String(field.value) : ""}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-beer">
-                            <SelectValue placeholder="Select a beer" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {beers.data?.map((beer) => (
-                            <SelectItem key={beer.id} value={String(beer.id)} data-testid={`option-beer-${beer.id}`}>
-                              {beer.name} -- {beer.kegSize} (${Number(beer.price).toFixed(2)})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
+                  <div className="space-y-3">
+                    {kegItems.map((item, index) => (
+                      <div key={index} className="flex gap-2 items-start">
+                        <div className="flex-1 grid grid-cols-[1fr_80px] gap-2">
+                          <Select
+                            value={item.beerId ? String(item.beerId) : ""}
+                            onValueChange={(val) => updateKegItem(index, "beerId", Number(val))}
+                          >
+                            <SelectTrigger data-testid={`select-beer-${index}`}>
+                              <SelectValue placeholder="Select a beer" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {beers.data?.map((beer) => (
+                                <SelectItem key={beer.id} value={String(beer.id)} data-testid={`option-beer-${beer.id}`}>
+                                  {beer.name} — {beer.kegSize} (${Number(beer.price).toFixed(2)})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={item.quantity}
+                            onChange={(e) => updateKegItem(index, "quantity", Math.max(1, parseInt(e.target.value) || 1))}
+                            className="text-center"
+                            data-testid={`input-quantity-${index}`}
+                          />
+                        </div>
+                        {kegItems.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 text-muted-foreground hover:text-destructive shrink-0"
+                            onClick={() => removeKegItem(index)}
+                            data-testid={`button-remove-keg-${index}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    {kegItemsError && (
+                      <p className="text-sm text-destructive" data-testid="text-keg-items-error">{kegItemsError}</p>
+                    )}
+                    {kegItems.length > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Each keg requires a <strong>${DEPOSIT_PER_KEG} refundable deposit</strong>.
+                      </p>
+                    )}
+                  </div>
                 )}
-                <FormField control={orderForm.control} name="quantity" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Quantity</FormLabel>
-                    <FormControl><Input type="number" min={1} max={10} {...field} data-testid="input-quantity" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
               </CardContent>
             </Card>
 
@@ -615,7 +714,7 @@ export default function KegOrderForm() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Payment</CardTitle>
-                <CardDescription>A $30 deposit is required to hold your order. Your card will be pre-authorized and charged only when the brewery confirms your order.</CardDescription>
+                <CardDescription>A $30 deposit per keg is required to hold your order. Your card will be pre-authorized and charged only when the brewery confirms your order.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField control={orderForm.control} name="cardNumber" render={({ field }) => (
@@ -643,12 +742,17 @@ export default function KegOrderForm() {
                 </div>
                 <Separator />
                 <div className="space-y-1 text-sm">
-                  {selectedBeer && (
-                    <div className="flex justify-between">
-                      <span>{selectedBeer.name} -- {selectedBeer.kegSize} x {quantity}</span>
-                      <span>${beerTotal.toFixed(2)}</span>
-                    </div>
-                  )}
+                  {kegItems.map((item, index) => {
+                    const beer = beerMap.get(item.beerId);
+                    if (!beer || item.beerId === 0) return null;
+                    const lineTotal = Number(beer.price) * item.quantity;
+                    return (
+                      <div key={index} className="flex justify-between">
+                        <span>{beer.name} — {beer.kegSize} × {item.quantity}</span>
+                        <span>${lineTotal.toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
                   {rentalFee > 0 && (
                     <div className="flex justify-between text-muted-foreground">
                       <span>Equipment rental</span>
@@ -656,7 +760,7 @@ export default function KegOrderForm() {
                     </div>
                   )}
                   <div className="flex justify-between text-muted-foreground">
-                    <span>Deposit (refundable)</span>
+                    <span>Deposit ({totalKegCount} keg{totalKegCount !== 1 ? "s" : ""} × ${DEPOSIT_PER_KEG}, refundable)</span>
                     <span>${depositAmount.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between font-semibold pt-1 border-t">

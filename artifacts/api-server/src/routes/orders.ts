@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { Router, type IRouter } from "express";
-import { eq, desc } from "drizzle-orm";
-import { db, ordersTable, beersTable, pickupScheduleTable, paymentAuthorizationsTable, kegReceiptsTable } from "@workspace/db";
+import { eq, desc, inArray } from "drizzle-orm";
+import { db, ordersTable, beersTable, pickupScheduleTable, paymentAuthorizationsTable, kegReceiptsTable, orderItemsTable } from "@workspace/db";
 import {
   ListOrdersQueryParams,
   CreateOrderBody,
@@ -29,9 +29,17 @@ function serializeOrder(order: typeof ordersTable.$inferSelect) {
   };
 }
 
+async function getOrderItems(orderIds: number[]) {
+  if (orderIds.length === 0) return [];
+  return db
+    .select()
+    .from(orderItemsTable)
+    .where(inArray(orderItemsTable.orderId, orderIds));
+}
+
 router.get("/orders", requireAuth, async (req, res): Promise<void> => {
   const parsed = ListOrdersQueryParams.safeParse(req.query);
-  let query = db.select().from(ordersTable).orderBy(desc(ordersTable.createdAt));
+  const query = db.select().from(ordersTable).orderBy(desc(ordersTable.createdAt));
 
   const orders = await query;
   const filtered =
@@ -39,7 +47,17 @@ router.get("/orders", requireAuth, async (req, res): Promise<void> => {
       ? orders.filter((o) => o.status === parsed.data.status)
       : orders;
 
-  res.json(filtered.map(serializeOrder));
+  const orderIds = filtered.map((o) => o.id);
+  const allItems = await getOrderItems(orderIds);
+
+  res.json(
+    filtered.map((o) => ({
+      ...serializeOrder(o),
+      items: allItems
+        .filter((i) => i.orderId === o.id)
+        .map((i) => ({ ...i, unitPrice: Number(i.unitPrice) })),
+    }))
+  );
 });
 
 router.post("/orders", async (req, res): Promise<void> => {
@@ -49,14 +67,18 @@ router.post("/orders", async (req, res): Promise<void> => {
     return;
   }
 
-  const [beer] = await db
-    .select()
-    .from(beersTable)
-    .where(eq(beersTable.id, parsed.data.beerId));
+  const { items, pouringMethod: pouringMethodRaw, ...rest } = parsed.data;
 
-  if (!beer) {
-    res.status(400).json({ error: "Beer not found" });
-    return;
+  // Look up all beers
+  const beerIds = [...new Set(items.map((i) => i.beerId))];
+  const beers = await db.select().from(beersTable).where(inArray(beersTable.id, beerIds));
+  const beerMap = new Map(beers.map((b) => [b.id, b]));
+
+  for (const item of items) {
+    if (!beerMap.has(item.beerId)) {
+      res.status(400).json({ error: `Beer with id ${item.beerId} not found` });
+      return;
+    }
   }
 
   const RENTAL_FEES: Record<string, number> = {
@@ -67,49 +89,85 @@ router.post("/orders", async (req, res): Promise<void> => {
     "Draft Trailer Rental ($125/day + $10 a mile both directions)": 125,
   };
 
-  const pouringMethod = parsed.data.pouringMethod ?? "My own equipment";
+  const pouringMethod = pouringMethodRaw ?? "My own equipment";
   const rentalFee = RENTAL_FEES[pouringMethod] ?? 0;
   const partyTapNeeded = ["Hand Pump Party Tap rental ($10 rental)", "CO2 Party Tap rental ($10 rental + $10 CO2 fee)"].includes(pouringMethod);
   const co2Needed = ["CO2 Party Tap rental ($10 rental + $10 CO2 fee)", "Jockey Box ($20 rental + $10 CO2 fee) Limited Supply"].includes(pouringMethod);
 
-  const depositAmount = 30;
-  const beerTotal = Number(beer.price) * parsed.data.quantity;
+  // Total keg count drives deposit: $30 per keg
+  const totalKegCount = items.reduce((sum, i) => sum + i.quantity, 0);
+  const depositAmount = 30 * totalKegCount;
+
+  // Beer total across all items
+  const beerTotal = items.reduce((sum, i) => {
+    const beer = beerMap.get(i.beerId)!;
+    return sum + Number(beer.price) * i.quantity;
+  }, 0);
+
   const totalAmount = beerTotal + depositAmount + rentalFee;
+
+  // Use first item's beer for denormalized summary fields on the order
+  const firstItem = items[0];
+  const firstBeer = beerMap.get(firstItem.beerId)!;
+  const summaryBeerName = items.length === 1 ? firstBeer.name : "Multiple kegs";
+  const summaryKegSize = items.length === 1 ? firstBeer.kegSize : "Various";
 
   const [order] = await db
     .insert(ordersTable)
     .values({
-      customerName: parsed.data.customerName,
-      customerEmail: parsed.data.customerEmail,
-      customerPhone: parsed.data.customerPhone,
-      pickupDate: parsed.data.pickupDate,
-      pickupTime: parsed.data.pickupTime,
-      beerId: parsed.data.beerId,
-      beerName: beer.name,
-      kegSize: beer.kegSize,
-      quantity: parsed.data.quantity,
+      customerName: rest.customerName,
+      customerEmail: rest.customerEmail,
+      customerPhone: rest.customerPhone,
+      pickupDate: rest.pickupDate,
+      pickupTime: rest.pickupTime,
+      beerId: firstBeer.id,
+      beerName: summaryBeerName,
+      kegSize: summaryKegSize,
+      quantity: totalKegCount,
       depositAmount: String(depositAmount),
       pouringMethod,
       partyTapNeeded,
       co2Needed,
       rentalFee: String(rentalFee),
-      notes: parsed.data.notes ?? null,
+      notes: rest.notes ?? null,
       status: "pending",
       paymentStatus: "authorized",
-      cloverPaymentId: parsed.data.cloverPaymentToken,
-      cloverIdempotencyKey: parsed.data.idempotencyKey,
+      cloverPaymentId: rest.cloverPaymentToken,
+      cloverIdempotencyKey: rest.idempotencyKey,
       totalAmount: String(totalAmount),
       customerToken: randomUUID(),
     })
+    .returning();
+
+  // Insert order items
+  const insertedItems = await db
+    .insert(orderItemsTable)
+    .values(
+      items.map((item) => {
+        const beer = beerMap.get(item.beerId)!;
+        return {
+          orderId: order.id,
+          beerId: beer.id,
+          beerName: beer.name,
+          kegSize: beer.kegSize,
+          unitPrice: String(beer.price),
+          quantity: item.quantity,
+        };
+      })
+    )
     .returning();
 
   // Link the payment authorization to this order
   await db
     .update(paymentAuthorizationsTable)
     .set({ orderId: order.id })
-    .where(eq(paymentAuthorizationsTable.idempotencyKey, parsed.data.idempotencyKey));
+    .where(eq(paymentAuthorizationsTable.idempotencyKey, rest.idempotencyKey));
 
-  res.status(201).json({ ...serializeOrder(order), customerToken: order.customerToken ?? "" });
+  res.status(201).json({
+    ...serializeOrder(order),
+    customerToken: order.customerToken ?? "",
+    items: insertedItems.map((i) => ({ ...i, unitPrice: Number(i.unitPrice) })),
+  });
 });
 
 router.get("/orders/:id", requireAuth, async (req, res): Promise<void> => {
@@ -134,14 +192,20 @@ router.get("/orders/:id", requireAuth, async (req, res): Promise<void> => {
     .from(pickupScheduleTable)
     .where(eq(pickupScheduleTable.orderId, order.id));
 
-  const { kegReceiptsTable } = await import("@workspace/db");
+  const { kegReceiptsTable: krt } = await import("@workspace/db");
   const [receipt] = await db
     .select()
-    .from(kegReceiptsTable)
-    .where(eq(kegReceiptsTable.orderId, order.id));
+    .from(krt)
+    .where(eq(krt.orderId, order.id));
+
+  const orderItems = await db
+    .select()
+    .from(orderItemsTable)
+    .where(eq(orderItemsTable.orderId, order.id));
 
   res.json({
     ...serializeOrder(order),
+    items: orderItems.map((i) => ({ ...i, unitPrice: Number(i.unitPrice) })),
     pickup: pickup ?? null,
     receipt: receipt ?? null,
   });
@@ -171,7 +235,15 @@ router.patch("/orders/:id", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
-  res.json(serializeOrder(order));
+  const orderItems = await db
+    .select()
+    .from(orderItemsTable)
+    .where(eq(orderItemsTable.orderId, order.id));
+
+  res.json({
+    ...serializeOrder(order),
+    items: orderItems.map((i) => ({ ...i, unitPrice: Number(i.unitPrice) })),
+  });
 });
 
 router.post("/orders/:id/confirm", requireAuth, async (req, res): Promise<void> => {
@@ -192,7 +264,8 @@ router.post("/orders/:id/confirm", requireAuth, async (req, res): Promise<void> 
   }
 
   if (order.status === "confirmed") {
-    res.json(serializeOrder(order));
+    const orderItems = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, order.id));
+    res.json({ ...serializeOrder(order), items: orderItems.map((i) => ({ ...i, unitPrice: Number(i.unitPrice) })) });
     return;
   }
 
@@ -209,14 +282,12 @@ router.post("/orders/:id/confirm", requireAuth, async (req, res): Promise<void> 
       idempotencyKey: captureIdempotencyKey,
     });
 
-    // Mark order confirmed, create pickup
     const [confirmedOrder] = await db
       .update(ordersTable)
       .set({ status: "confirmed", paymentStatus: "captured", paymentError: null })
       .where(eq(ordersTable.id, order.id))
       .returning();
 
-    // Upsert pickup schedule
     const existingPickup = await db
       .select()
       .from(pickupScheduleTable)
@@ -235,7 +306,8 @@ router.post("/orders/:id/confirm", requireAuth, async (req, res): Promise<void> 
       });
     }
 
-    res.json(serializeOrder(confirmedOrder));
+    const orderItems = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, order.id));
+    res.json({ ...serializeOrder(confirmedOrder), items: orderItems.map((i) => ({ ...i, unitPrice: Number(i.unitPrice) })) });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Payment capture failed";
     req.log.error({ err }, "Payment capture failed");
@@ -405,7 +477,8 @@ router.post("/orders/:id/return", requireAuth, async (req, res): Promise<void> =
       .where(eq(ordersTable.id, order.id))
       .returning();
 
-    res.json(serializeOrder(returnedOrder));
+    const orderItems = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, order.id));
+    res.json({ ...serializeOrder(returnedOrder), items: orderItems.map((i) => ({ ...i, unitPrice: Number(i.unitPrice) })) });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Refund failed";
     req.log.error({ err }, "Deposit refund failed");
@@ -437,13 +510,13 @@ router.post("/orders/:id/cancel", requireAuth, async (req, res): Promise<void> =
     return;
   }
 
-  // Cancel pickup if exists
   await db
     .update(pickupScheduleTable)
     .set({ status: "cancelled" })
     .where(eq(pickupScheduleTable.orderId, order.id));
 
-  res.json(serializeOrder(order));
+  const orderItems = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, order.id));
+  res.json({ ...serializeOrder(order), items: orderItems.map((i) => ({ ...i, unitPrice: Number(i.unitPrice) })) });
 });
 
 export default router;

@@ -653,6 +653,32 @@ components:
         notes:
           type: ["string", "null"]
 
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        orderId:
+          type: integer
+        beerId:
+          type: integer
+        beerName:
+          type: string
+        kegSize:
+          type: string
+        unitPrice:
+          type: number
+        quantity:
+          type: integer
+      required:
+        - id
+        - orderId
+        - beerId
+        - beerName
+        - kegSize
+        - unitPrice
+        - quantity
+
     Order:
       type: object
       properties:
@@ -700,6 +726,10 @@ components:
           type: number
         paymentError:
           type: ["string", "null"]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
         createdAt:
           type: string
         updatedAt:
@@ -726,6 +756,7 @@ components:
         - cloverPaymentId
         - totalAmount
         - paymentError
+        - items
         - createdAt
         - updatedAt
 
@@ -786,6 +817,10 @@ components:
           type: number
         paymentError:
           type: ["string", "null"]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
         receipt:
           $ref: "#/components/schemas/KegReceipt"
         pickup:
@@ -816,10 +851,22 @@ components:
         - cloverPaymentId
         - totalAmount
         - paymentError
+        - items
         - receipt
         - pickup
         - createdAt
         - updatedAt
+
+    CreateOrderItemBody:
+      type: object
+      properties:
+        beerId:
+          type: integer
+        quantity:
+          type: integer
+      required:
+        - beerId
+        - quantity
 
     CreateOrderBody:
       type: object
@@ -834,10 +881,11 @@ components:
           type: string
         pickupTime:
           type: string
-        beerId:
-          type: integer
-        quantity:
-          type: integer
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreateOrderItemBody"
+          minItems: 1
         pouringMethod:
           type: string
         notes:
@@ -852,8 +900,7 @@ components:
         - customerPhone
         - pickupDate
         - pickupTime
-        - beerId
-        - quantity
+        - items
         - pouringMethod
         - cloverPaymentToken
         - idempotencyKey

@@ -43,6 +43,16 @@ export interface UpdateBeerBody {
   notes?: string | null;
 }
 
+export interface OrderItem {
+  id: number;
+  orderId: number;
+  beerId: number;
+  beerName: string;
+  kegSize: string;
+  unitPrice: number;
+  quantity: number;
+}
+
 export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];
 
 export const OrderStatus = {
@@ -88,6 +98,7 @@ export interface Order {
   totalAmount: number;
   /** @nullable */
   paymentError: string | null;
+  items: OrderItem[];
   createdAt: string;
   updatedAt: string;
 }
@@ -218,10 +229,16 @@ export interface OrderDetail {
   totalAmount: number;
   /** @nullable */
   paymentError: string | null;
+  items: OrderItem[];
   receipt: KegReceipt;
   pickup: Pickup;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CreateOrderItemBody {
+  beerId: number;
+  quantity: number;
 }
 
 export interface CreateOrderBody {
@@ -230,8 +247,8 @@ export interface CreateOrderBody {
   customerPhone: string;
   pickupDate: string;
   pickupTime: string;
-  beerId: number;
-  quantity: number;
+  /** @minItems 1 */
+  items: CreateOrderItemBody[];
   pouringMethod: string;
   /** @nullable */
   notes?: string | null;
