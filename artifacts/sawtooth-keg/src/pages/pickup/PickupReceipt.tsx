@@ -102,6 +102,35 @@ export default function PickupReceipt() {
 
             <Separator />
 
+            {order.data?.items && order.data.items.length > 0 && (
+              <>
+                <div className="space-y-1">
+                  <h2 className="text-xs uppercase tracking-wide font-semibold text-muted-foreground mb-2">Ordered Kegs</h2>
+                  <div className="rounded-lg border overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
+                          <th className="text-left px-3 py-2 font-medium">Beer</th>
+                          <th className="text-left px-3 py-2 font-medium">Keg Size</th>
+                          <th className="text-right px-3 py-2 font-medium">Qty</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {order.data.items.map((item) => (
+                          <tr key={item.id} className="border-t border-border/50">
+                            <td className="px-3 py-2">{item.beerName}</td>
+                            <td className="px-3 py-2">{item.kegSize}</td>
+                            <td className="px-3 py-2 text-right">{item.quantity}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <Separator />
+              </>
+            )}
+
             <div className="space-y-1">
               <h2 className="text-xs uppercase tracking-wide font-semibold text-muted-foreground mb-2">Keg & Equipment</h2>
               <ReceiptRow label="Keg Brand" value={receipt.data.kegBrand} />

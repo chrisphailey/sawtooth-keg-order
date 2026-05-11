@@ -125,19 +125,51 @@ export default function AdminOrderDetail() {
 
               <Card>
                 <CardHeader><CardTitle className="text-base">Order Details</CardTitle></CardHeader>
-                <CardContent className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-muted-foreground block">Beer</span>{order.data.beerName}</div>
-                  <div><span className="text-muted-foreground block">Keg Size</span>{order.data.kegSize}</div>
-                  <div><span className="text-muted-foreground block">Quantity</span>{order.data.quantity}</div>
-                  <div><span className="text-muted-foreground block">Deposit</span>${Number(order.data.depositAmount).toFixed(2)}</div>
-                  <div className="col-span-2">
-                    <span className="text-muted-foreground block">Pouring Method</span>
-                    {order.data.pouringMethod}
-                  </div>
-                  {Number(order.data.rentalFee) > 0 && (
-                    <div><span className="text-muted-foreground block">Rental Fee</span>${Number(order.data.rentalFee).toFixed(2)}</div>
+                <CardContent className="text-sm space-y-3">
+                  {order.data.items && order.data.items.length > 0 ? (
+                    <div>
+                      <span className="text-muted-foreground block mb-2">Keg Line Items</span>
+                      <div className="rounded-lg border overflow-hidden">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
+                              <th className="text-left px-3 py-2 font-medium">Beer</th>
+                              <th className="text-left px-3 py-2 font-medium">Keg Size</th>
+                              <th className="text-right px-3 py-2 font-medium">Qty</th>
+                              <th className="text-right px-3 py-2 font-medium">Unit Price</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {order.data.items.map((item) => (
+                              <tr key={item.id} className="border-t border-border/50">
+                                <td className="px-3 py-2">{item.beerName}</td>
+                                <td className="px-3 py-2">{item.kegSize}</td>
+                                <td className="px-3 py-2 text-right">{item.quantity}</td>
+                                <td className="px-3 py-2 text-right">${Number(item.unitPrice).toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div><span className="text-muted-foreground block">Beer</span>{order.data.beerName}</div>
+                      <div><span className="text-muted-foreground block">Keg Size</span>{order.data.kegSize}</div>
+                      <div><span className="text-muted-foreground block">Quantity</span>{order.data.quantity}</div>
+                    </div>
                   )}
-                  {order.data.notes && <div className="col-span-2"><span className="text-muted-foreground block">Notes</span>{order.data.notes}</div>}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><span className="text-muted-foreground block">Deposit</span>${Number(order.data.depositAmount).toFixed(2)}</div>
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground block">Pouring Method</span>
+                      {order.data.pouringMethod}
+                    </div>
+                    {Number(order.data.rentalFee) > 0 && (
+                      <div><span className="text-muted-foreground block">Rental Fee</span>${Number(order.data.rentalFee).toFixed(2)}</div>
+                    )}
+                    {order.data.notes && <div className="col-span-2"><span className="text-muted-foreground block">Notes</span>{order.data.notes}</div>}
+                  </div>
                 </CardContent>
               </Card>
 

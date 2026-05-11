@@ -98,7 +98,7 @@ export default function PickupForms() {
       co2RegulatorNumber: existingReceipt.data.co2RegulatorNumber ?? "",
       trashCanNumbers: existingReceipt.data.trashCanNumbers ?? "",
       kegBrand: existingReceipt.data.kegBrand ?? "Sawtooth Brewery",
-      kegSize: existingReceipt.data.kegSize ?? order.data?.kegSize ?? "",
+      kegSize: existingReceipt.data.kegSize ?? (order.data?.items?.length ? order.data.items.map((it) => `${it.kegSize}${it.quantity > 1 ? ` x${it.quantity}` : ""}`).join(", ") : order.data?.kegSize ?? ""),
       kegIdNumbers: existingReceipt.data.kegIdNumbers ?? "",
     } : {
       dateOfSale: today,
@@ -107,7 +107,7 @@ export default function PickupForms() {
       purchaserPhone: order.data?.customerPhone ?? "",
       consumptionDate: order.data?.pickupDate ?? "",
       kegBrand: "Sawtooth Brewery",
-      kegSize: order.data?.kegSize ?? "",
+      kegSize: order.data?.items?.length ? order.data.items.map((it) => `${it.kegSize}${it.quantity > 1 ? ` x${it.quantity}` : ""}`).join(", ") : order.data?.kegSize ?? "",
       co2TankNeeded: false,
     },
   });
@@ -180,6 +180,33 @@ export default function PickupForms() {
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {order.data?.items && order.data.items.length > 0 && (
+                <Card>
+                  <CardHeader><CardTitle className="text-sm">Ordered Kegs</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="rounded-lg border overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
+                            <th className="text-left px-3 py-2 font-medium">Beer</th>
+                            <th className="text-left px-3 py-2 font-medium">Keg Size</th>
+                            <th className="text-right px-3 py-2 font-medium">Qty</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {order.data.items.map((item) => (
+                            <tr key={item.id} className="border-t border-border/50">
+                              <td className="px-3 py-2">{item.beerName}</td>
+                              <td className="px-3 py-2">{item.kegSize}</td>
+                              <td className="px-3 py-2 text-right">{item.quantity}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               <Card>
                 <CardHeader><CardTitle className="text-sm">Trade Name: Sawtooth Brewery</CardTitle></CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
