@@ -86,12 +86,12 @@ export default function AdminOrders() {
     });
   };
 
-  const handleReturn = (id: number) => {
-    if (!confirm("Mark keg as returned and refund the $30 deposit?")) return;
+  const handleReturn = (id: number, depositAmount: number) => {
+    if (!confirm(`Mark keg as returned and refund the $${depositAmount.toFixed(2)} deposit?`)) return;
     setReturningId(id);
     returnOrder.mutate({ id }, {
       onSuccess: () => {
-        toast({ title: "Keg returned", description: "$30 deposit has been refunded." });
+        toast({ title: "Keg returned", description: `$${depositAmount.toFixed(2)} deposit has been refunded.` });
         queryClient.invalidateQueries({ queryKey: getListOrdersQueryKey() });
       },
       onError: (err) => {
@@ -163,7 +163,7 @@ export default function AdminOrders() {
                         <td className="px-4 py-3">
                           {order.items && order.items.length > 1 ? (
                             <>
-                              <div>Multiple kegs ({order.items.length})</div>
+                              <div>Multiple kegs</div>
                               <div className="text-xs text-muted-foreground">{order.quantity} total</div>
                             </>
                           ) : (
@@ -209,7 +209,7 @@ export default function AdminOrders() {
                                 variant="outline"
                                 className="h-7 text-xs text-purple-700 border-purple-300 hover:bg-purple-50"
                                 disabled={returningId === order.id}
-                                onClick={() => handleReturn(order.id)}
+                                onClick={() => handleReturn(order.id, Number(order.depositAmount))}
                                 data-testid={`button-return-${order.id}`}
                               >
                                 {returningId === order.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3 mr-1" />}
