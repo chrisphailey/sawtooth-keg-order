@@ -145,6 +145,17 @@ export const ListOrdersResponseItem = zod.object({
       }),
     )
     .optional(),
+  addons: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        quantity: zod.number(),
+        unitPrice: zod.number(),
+        total: zod.number(),
+      }),
+    )
+    .optional(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -170,6 +181,17 @@ export const CreateOrderBody = zod.object({
     .min(1),
   pouringMethod: zod.string(),
   notes: zod.string().nullish(),
+  addons: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        quantity: zod.number(),
+        unitPrice: zod.number(),
+        total: zod.number(),
+      }),
+    )
+    .optional(),
   cloverPaymentToken: zod.string(),
   idempotencyKey: zod.string(),
 });
@@ -324,6 +346,17 @@ export const UpdateOrderResponse = zod.object({
       }),
     )
     .optional(),
+  addons: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        quantity: zod.number(),
+        unitPrice: zod.number(),
+        total: zod.number(),
+      }),
+    )
+    .optional(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -373,6 +406,17 @@ export const ConfirmOrderResponse = zod.object({
         kegSize: zod.string(),
         unitPrice: zod.number(),
         quantity: zod.number(),
+      }),
+    )
+    .optional(),
+  addons: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        quantity: zod.number(),
+        unitPrice: zod.number(),
+        total: zod.number(),
       }),
     )
     .optional(),
@@ -428,6 +472,17 @@ export const CancelOrderResponse = zod.object({
       }),
     )
     .optional(),
+  addons: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        quantity: zod.number(),
+        unitPrice: zod.number(),
+        total: zod.number(),
+      }),
+    )
+    .optional(),
   createdAt: zod.string(),
   updatedAt: zod.string(),
 });
@@ -477,6 +532,17 @@ export const ReturnOrderResponse = zod.object({
         kegSize: zod.string(),
         unitPrice: zod.number(),
         quantity: zod.number(),
+      }),
+    )
+    .optional(),
+  addons: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        quantity: zod.number(),
+        unitPrice: zod.number(),
+        total: zod.number(),
       }),
     )
     .optional(),
@@ -773,6 +839,17 @@ export const GetRecentOrdersResponseItem = zod.object({
         kegSize: zod.string(),
         unitPrice: zod.number(),
         quantity: zod.number(),
+      }),
+    )
+    .optional(),
+  addons: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        name: zod.string(),
+        quantity: zod.number(),
+        unitPrice: zod.number(),
+        total: zod.number(),
       }),
     )
     .optional(),

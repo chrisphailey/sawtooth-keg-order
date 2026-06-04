@@ -73,6 +73,14 @@ export const OrderPaymentStatus = {
   refunded: "refunded",
 } as const;
 
+export interface OrderAddon {
+  id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
 export interface Order {
   id: number;
   customerName: string;
@@ -99,6 +107,7 @@ export interface Order {
   /** @nullable */
   paymentError: string | null;
   items?: OrderItem[];
+  addons?: OrderAddon[];
   createdAt: string;
   updatedAt: string;
 }
@@ -252,6 +261,7 @@ export interface CreateOrderBody {
   pouringMethod: string;
   /** @nullable */
   notes?: string | null;
+  addons?: OrderAddon[];
   cloverPaymentToken: string;
   idempotencyKey: string;
 }

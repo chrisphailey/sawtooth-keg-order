@@ -730,6 +730,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/OrderItem"
+        addons:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderAddon"
         createdAt:
           type: string
         updatedAt:
@@ -856,6 +860,26 @@ components:
         - createdAt
         - updatedAt
 
+    OrderAddon:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+        total:
+          type: number
+      required:
+        - id
+        - name
+        - quantity
+        - unitPrice
+        - total
+
     CreateOrderItemBody:
       type: object
       properties:
@@ -889,6 +913,10 @@ components:
           type: string
         notes:
           type: ["string", "null"]
+        addons:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderAddon"
         cloverPaymentToken:
           type: string
         idempotencyKey:

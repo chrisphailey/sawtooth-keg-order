@@ -18,14 +18,23 @@ import { requireAuth } from "../middlewares/requireAuth";
 import { capturePayment, refundPayment } from "../lib/clover";
 import { sendOrderConfirmationEmails } from "../lib/email";
 
+interface OrderAddon {
+  id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
 const router: IRouter = Router();
 
 function serializeOrder(order: typeof ordersTable.$inferSelect) {
-  const { customerToken: _omit, ...rest } = order;
+  const { customerToken: _omit, addons, ...rest } = order;
   return {
     ...rest,
     depositAmount: Number(order.depositAmount),
     totalAmount: Number(order.totalAmount),
+    addons: (addons as OrderAddon[] | null) ?? [],
   };
 }
 
@@ -67,7 +76,7 @@ router.post("/orders", async (req, res): Promise<void> => {
     return;
   }
 
-  const { items, pouringMethod: pouringMethodRaw, ...rest } = parsed.data;
+  const { items, addons: addonsData, pouringMethod: pouringMethodRaw, ...rest } = parsed.data;
 
   // Look up all beers
   const beerIds = [...new Set(items.map((i) => i.beerId))];
@@ -104,7 +113,8 @@ router.post("/orders", async (req, res): Promise<void> => {
     return sum + Number(beer.price) * i.quantity;
   }, 0);
 
-  const totalAmount = beerTotal + depositAmount + rentalFee;
+  const addonsTotal = (addonsData ?? []).reduce((sum, a) => sum + a.unitPrice * a.quantity, 0);
+  const totalAmount = beerTotal + depositAmount + rentalFee + addonsTotal;
 
   // Use first item's beer for denormalized summary fields on the order
   const firstItem = items[0];
@@ -130,6 +140,7 @@ router.post("/orders", async (req, res): Promise<void> => {
       co2Needed,
       rentalFee: String(rentalFee),
       notes: rest.notes ?? null,
+      addons: addonsData && addonsData.length > 0 ? addonsData : null,
       status: "pending",
       paymentStatus: "authorized",
       cloverPaymentId: rest.cloverPaymentToken,

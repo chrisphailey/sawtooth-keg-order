@@ -29,6 +29,14 @@ const POURING_OPTIONS = [
 
 const DEPOSIT_PER_KEG = 30;
 
+const ADDONS = [
+  { id: "trash_can", name: "Trash Can Rental", unitPrice: 5, note: "You will need a way to keep the beer 38°F or lower." },
+  { id: "pint_glasses", name: "Sleeve of Plastic Pint Glasses (50 cups)", unitPrice: 7, note: null },
+  { id: "ice", name: "Ice (10 lb bag)", unitPrice: 5, note: "Recommended 2–3 bags per keg." },
+] as const;
+
+type AddonId = typeof ADDONS[number]["id"];
+
 interface KegLineItem {
   beerId: number;
   quantity: number;
@@ -111,6 +119,7 @@ export default function KegOrderForm() {
   const [ispError, setIspError] = useState<string | null>(null);
   const [kegItems, setKegItems] = useState<KegLineItem[]>([{ beerId: 0, quantity: 1 }]);
   const [kegItemsError, setKegItemsError] = useState<string | null>(null);
+  const [addonQtys, setAddonQtys] = useState<Record<AddonId, number>>({ trash_can: 0, pint_glasses: 0, ice: 0 });
 
   const beers = useListBeers({ availableOnly: true });
   const authorizePayment = useAuthorizePayment();
@@ -164,7 +173,8 @@ export default function KegOrderForm() {
   }, 0);
   const totalKegCount = kegItems.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const depositAmount = DEPOSIT_PER_KEG * totalKegCount;
-  const total = beerTotal + depositAmount + rentalFee;
+  const addonsTotal = ADDONS.reduce((sum, a) => sum + a.unitPrice * (addonQtys[a.id] ?? 0), 0);
+  const total = beerTotal + depositAmount + rentalFee + addonsTotal;
 
   const updateKegItem = (index: number, field: keyof KegLineItem, value: number) => {
     setKegItems((prev) => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
@@ -226,6 +236,9 @@ export default function KegOrderForm() {
               items: kegItems.map((item) => ({ beerId: item.beerId, quantity: item.quantity })),
               pouringMethod: values.pouringMethod,
               notes: values.notes || null,
+              addons: ADDONS
+                .filter((a) => (addonQtys[a.id] ?? 0) > 0)
+                .map((a) => ({ id: a.id, name: a.name, quantity: addonQtys[a.id], unitPrice: a.unitPrice, total: a.unitPrice * addonQtys[a.id] })),
               cloverPaymentToken: auth.cloverPaymentId,
               idempotencyKey: auth.idempotencyKey,
             },
@@ -715,6 +728,43 @@ export default function KegOrderForm() {
             </Card>
 
             <Card>
+              <CardHeader><CardTitle className="text-base">Optional Add-ons</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                {ADDONS.map((addon) => (
+                  <div key={addon.id} className="flex items-start gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-sm font-medium">{addon.name}</span>
+                        <span className="text-sm text-muted-foreground">${addon.unitPrice.toFixed(2)} each</span>
+                      </div>
+                      {addon.note && (
+                        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1 mt-1">{addon.note}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setAddonQtys((prev) => ({ ...prev, [addon.id]: Math.max(0, (prev[addon.id] ?? 0) - 1) }))}
+                        disabled={(addonQtys[addon.id] ?? 0) === 0}
+                      >−</Button>
+                      <span className="w-6 text-center text-sm font-medium">{addonQtys[addon.id] ?? 0}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setAddonQtys((prev) => ({ ...prev, [addon.id]: (prev[addon.id] ?? 0) + 1 }))}
+                      >+</Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            <Card>
               <CardHeader>
                 <CardTitle className="text-base">Payment</CardTitle>
                 <CardDescription>A $30 deposit per keg is required to hold your order. Your card will be pre-authorized and charged only when the brewery confirms your order.</CardDescription>
@@ -762,6 +812,12 @@ export default function KegOrderForm() {
                       <span>${rentalFee.toFixed(2)}</span>
                     </div>
                   )}
+                  {ADDONS.filter(a => (addonQtys[a.id] ?? 0) > 0).map(a => (
+                    <div key={a.id} className="flex justify-between text-muted-foreground">
+                      <span>{a.name} × {addonQtys[a.id]}</span>
+                      <span>${(a.unitPrice * addonQtys[a.id]).toFixed(2)}</span>
+                    </div>
+                  ))}
                   <div className="flex justify-between text-muted-foreground">
                     <span>Deposit ({totalKegCount} keg{totalKegCount !== 1 ? "s" : ""} × ${DEPOSIT_PER_KEG}, refundable)</span>
                     <span>${depositAmount.toFixed(2)}</span>
