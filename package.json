@@ -1,14 +1,22 @@
 {
-  "name": "workspace",
+  "name": "sawtooth-keg-order-flow",
   "version": "0.0.0",
   "license": "MIT",
+  "private": true,
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
-    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "dev:api": "pnpm --filter @workspace/api-server run dev",
+    "dev:web": "pnpm --filter @workspace/sawtooth-keg run dev",
+    "build": "pnpm run typecheck && pnpm --filter @workspace/sawtooth-keg run build && pnpm --filter @workspace/api-server run build",
+    "start": "pnpm --filter @workspace/api-server run start",
+    "db:push": "pnpm --filter @workspace/db run push",
     "typecheck:libs": "tsc --build",
-    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+    "typecheck": "pnpm run typecheck:libs && pnpm --filter @workspace/sawtooth-keg run typecheck && pnpm --filter @workspace/api-server run typecheck"
   },
-  "private": true,
   "devDependencies": {
     "typescript": "~5.9.2",
     "prettier": "^3.8.1"
