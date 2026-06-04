@@ -671,6 +671,9 @@ export default function KegOrderForm() {
                     <FormMessage />
                   </FormItem>
                 )} />
+                <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                  <span className="font-semibold">Local delivery available</span> — We deliver within the Wood River Valley for <span className="font-semibold">$4 per mile each way</span>, payable by cash or check upon drop-off. Contact us when placing your order to arrange delivery.
+                </div>
               </CardContent>
             </Card>
 
