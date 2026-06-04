@@ -266,20 +266,20 @@ const CloverPaymentFields = forwardRef<CloverPaymentHandle>((_, ref) => {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <FormLabel>Card Number</FormLabel>
+        <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Card Number</label>
         <div id="clover-card-number" className="h-11 rounded-md border border-input bg-background px-3 py-2" />
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="space-y-2">
-          <FormLabel>Expiration</FormLabel>
+          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Expiration</label>
           <div id="clover-card-date" className="h-11 rounded-md border border-input bg-background px-3 py-2" />
         </div>
         <div className="space-y-2">
-          <FormLabel>CVV</FormLabel>
+          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">CVV</label>
           <div id="clover-card-cvv" className="h-11 rounded-md border border-input bg-background px-3 py-2" />
         </div>
         <div className="space-y-2">
-          <FormLabel>Postal Code</FormLabel>
+          <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Postal Code</label>
           <div id="clover-card-postal-code" className="h-11 rounded-md border border-input bg-background px-3 py-2" />
         </div>
       </div>
