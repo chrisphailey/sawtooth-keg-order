@@ -18,6 +18,9 @@ const app: Express = express();
 const publicDir = path.resolve(__dirname, "../../sawtooth-keg/dist/public");
 const shouldServeClient =
   process.env.NODE_ENV === "production" && fs.existsSync(publicDir);
+const shouldUseClerkMiddleware =
+  Boolean(process.env.CLERK_SECRET_KEY) &&
+  Boolean(process.env.CLERK_PUBLISHABLE_KEY);
 
 app.use(
   pinoHttp({
@@ -66,14 +69,18 @@ if (shouldServeClient) {
   logger.warn({ publicDir }, "Client build directory was not found");
 }
 
-app.use(
-  clerkMiddleware((req) => ({
-    publishableKey: publishableKeyFromHost(
-      getClerkProxyHost(req) ?? "",
-      process.env.CLERK_PUBLISHABLE_KEY,
-    ),
-  })),
-);
+if (shouldUseClerkMiddleware) {
+  app.use(
+    clerkMiddleware((req) => ({
+      publishableKey: publishableKeyFromHost(
+        getClerkProxyHost(req) ?? "",
+        process.env.CLERK_PUBLISHABLE_KEY,
+      ),
+    })),
+  );
+} else {
+  logger.warn("Clerk keys are not configured; Clerk server middleware is disabled");
+}
 
 app.use("/api", router);
 
