@@ -1,10 +1,8 @@
 import React from "react";
 import { Link } from "wouter";
-import { Show, useAuth, useClerk } from "@clerk/react";
 import { Button } from "@/components/ui/button";
 
 export function Navbar() {
-  const { signOut } = useClerk();
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
   return (
@@ -16,23 +14,12 @@ export function Navbar() {
         </Link>
         
         <div className="flex items-center gap-4">
-          <Show when="signed-out">
-            <Link href="/keg-order" className="text-sm font-medium hover:text-primary transition-colors">
-              Order a Keg
-            </Link>
-            <Link href="/sign-in" className="text-sm font-medium">
-              <Button variant="outline" size="sm" data-testid="link-signin">Staff Sign In</Button>
-            </Link>
-          </Show>
-          
-          <Show when="signed-in">
-            <Link href="/admin" className="text-sm font-medium hover:text-primary transition-colors">
-              Dashboard
-            </Link>
-            <Button variant="ghost" size="sm" onClick={() => signOut({ redirectUrl: "/" })} data-testid="button-signout">
-              Sign Out
-            </Button>
-          </Show>
+          <Link href="/keg-order" className="text-sm font-medium hover:text-primary transition-colors">
+            Order a Keg
+          </Link>
+          <Link href="/admin" className="text-sm font-medium">
+            <Button variant="outline" size="sm" data-testid="link-admin">Staff Access</Button>
+          </Link>
         </div>
       </div>
     </nav>
