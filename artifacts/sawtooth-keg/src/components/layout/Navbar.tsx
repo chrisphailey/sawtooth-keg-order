@@ -11,7 +11,7 @@ export function Navbar() {
     <nav className="border-b bg-background sticky top-0 z-10">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2">
-          <img src={`${basePath}/logo.svg`} alt="Sawtooth Brewery Logo" className="h-8 w-8" />
+          <img src={`${basePath}/logo.png`} alt="Sawtooth Brewery Logo" className="h-9 w-auto" />
           <span className="font-bold text-xl text-primary font-serif tracking-tight">Sawtooth Brewery</span>
         </Link>
         

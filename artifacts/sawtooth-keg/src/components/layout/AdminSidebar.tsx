@@ -27,7 +27,7 @@ export function AdminSidebar() {
     <div className="flex flex-col w-64 border-r bg-sidebar h-full text-sidebar-foreground">
       <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
         <Link href="/" className="flex items-center gap-2">
-          <img src={`${basePath}/logo.svg`} alt="Logo" className="h-6 w-6" />
+          <img src={`${basePath}/logo.png`} alt="Logo" className="h-7 w-auto" />
           <span className="font-bold text-lg font-serif">Sawtooth Admin</span>
         </Link>
       </div>

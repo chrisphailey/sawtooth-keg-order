@@ -19,8 +19,8 @@ export default function Landing() {
         </div>
 
         <div className="z-10 max-w-3xl w-full flex flex-col items-center">
-          <div className="mb-8 p-4 bg-white/50 backdrop-blur-sm rounded-full border shadow-sm">
-            <img src={`${basePath}/logo.svg`} alt="Sawtooth Logo" className="h-16 w-16" />
+          <div className="mb-8 p-4 bg-white/50 backdrop-blur-sm rounded-2xl border shadow-sm">
+            <img src={`${basePath}/logo.png`} alt="Sawtooth Logo" className="h-24 w-auto" />
           </div>
           
           <h1 className="text-5xl md:text-7xl font-bold font-serif text-stone-900 tracking-tight mb-6">
