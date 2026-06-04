@@ -17,6 +17,7 @@ corepack prepare pnpm@9.15.9 --activate
 pnpm install
 cp .env.example .env
 pnpm db:push
+pnpm db:seed:beers ./scripts/data/beers.example.json
 pnpm run dev:api
 pnpm run dev:web
 ```
@@ -31,6 +32,30 @@ pnpm run start
 ```
 
 The production API serves the built Vite app from `artifacts/sawtooth-keg/dist/public`, so Railway only needs one service.
+
+## Beer/Keg Options
+
+The keg order dropdown is populated from the `beers` table. A fresh Railway Postgres database starts empty, so seed real Sawtooth keg options before sending traffic to the form.
+
+Create a JSON file with this shape:
+
+```json
+[
+  {
+    "name": "Beer Name",
+    "kegSize": "1/2 BBL",
+    "price": 175,
+    "available": true,
+    "notes": null
+  }
+]
+```
+
+Then run:
+
+```sh
+pnpm db:seed:beers ./path/to/beers.json
+```
 
 ## Railway Deployment
 
@@ -49,6 +74,6 @@ Required variables:
 
 Optional integrations:
 
-- Clover payments: `CLOVER_API_BASE`, `CLOVER_MERCHANT_ID`, `CLOVER_API_TOKEN`
+- Clover payments: `CLOVER_API_BASE`, `CLOVER_API_TOKEN`, `VITE_CLOVER_ENV`, `VITE_CLOVER_API_ACCESS_KEY`, `VITE_CLOVER_MERCHANT_ID`
 - Email: `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `ADMIN_EMAIL`
 - App links in email: `APP_BASE_URL`

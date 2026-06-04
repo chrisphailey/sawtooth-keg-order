@@ -1,4 +1,10 @@
-import { useState } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -51,11 +57,50 @@ const orderSchema = z.object({
   pickupTime: z.string().min(1, "Pickup time required"),
   pouringMethod: z.string().min(1, "Select how you will pour the beer"),
   notes: z.string().optional(),
-  cardNumber: z.string().min(13, "Card number required").max(19),
-  cardExp: z.string().regex(/^\d{2}\/\d{2}$/, "Format: MM/YY"),
-  cardCvv: z.string().min(3, "CVV required").max(4),
 });
 type OrderFormValues = z.infer<typeof orderSchema>;
+
+type CloverElement = {
+  mount: (selector: string) => void;
+  unmount?: () => void;
+  destroy?: () => void;
+};
+
+type CloverElements = {
+  create: (
+    type: "CARD_NUMBER" | "CARD_DATE" | "CARD_CVV" | "CARD_POSTAL_CODE",
+    styles?: Record<string, unknown>,
+  ) => CloverElement;
+};
+
+type CloverInstance = {
+  elements: () => CloverElements;
+  createToken: () => Promise<{
+    token?: string;
+    errors?: Record<string, string | { error?: string }>;
+  }>;
+};
+
+declare global {
+  interface Window {
+    Clover?: new (
+      apiAccessKey: string,
+      options?: { merchantId?: string; locale?: string },
+    ) => CloverInstance;
+  }
+}
+
+interface CloverPaymentHandle {
+  createToken: () => Promise<string>;
+}
+
+const CLOVER_ENV = import.meta.env.VITE_CLOVER_ENV ?? "sandbox";
+const CLOVER_SDK_URL =
+  CLOVER_ENV === "production"
+    ? "https://checkout.clover.com/sdk.js"
+    : "https://checkout.sandbox.dev.clover.com/sdk.js";
+const CLOVER_API_ACCESS_KEY = import.meta.env.VITE_CLOVER_API_ACCESS_KEY;
+const CLOVER_MERCHANT_ID = import.meta.env.VITE_CLOVER_MERCHANT_ID;
 
 const ispSchema = z.object({
   purchaserDob: z.string().min(1, "Date of birth is required"),
@@ -111,6 +156,149 @@ function StepIndicator({ step }: { step: 1 | 2 }) {
   );
 }
 
+const cloverStyles = {
+  body: {
+    fontFamily: "Inter, sans-serif",
+    fontSize: "14px",
+  },
+  input: {
+    color: "#292524",
+    fontSize: "14px",
+  },
+};
+
+function extractCloverError(
+  errors?: Record<string, string | { error?: string }>,
+): string {
+  if (!errors) return "Card details could not be tokenized.";
+  const first = Object.values(errors)[0];
+  if (typeof first === "string") return first;
+  return first?.error ?? "Card details could not be tokenized.";
+}
+
+const CloverPaymentFields = forwardRef<CloverPaymentHandle>((_, ref) => {
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const cloverRef = useRef<CloverInstance | null>(null);
+  const elementsRef = useRef<CloverElement[]>([]);
+
+  useEffect(() => {
+    if (!CLOVER_API_ACCESS_KEY || !CLOVER_MERCHANT_ID) {
+      setError("Clover payment fields are not configured yet.");
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadScript = async () => {
+      const existing = document.querySelector<HTMLScriptElement>(
+        `script[src="${CLOVER_SDK_URL}"]`,
+      );
+
+      if (!existing) {
+        await new Promise<void>((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = CLOVER_SDK_URL;
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = () =>
+            reject(new Error("Clover payment script failed to load."));
+          document.head.appendChild(script);
+        });
+      }
+
+      if (cancelled) return;
+      if (!window.Clover) {
+        throw new Error("Clover payment script did not initialize.");
+      }
+
+      const clover = new window.Clover(CLOVER_API_ACCESS_KEY, {
+        merchantId: CLOVER_MERCHANT_ID,
+      });
+      const elements = clover.elements();
+      const cardNumber = elements.create("CARD_NUMBER", cloverStyles);
+      const cardDate = elements.create("CARD_DATE", cloverStyles);
+      const cardCvv = elements.create("CARD_CVV", cloverStyles);
+      const postalCode = elements.create("CARD_POSTAL_CODE", cloverStyles);
+
+      cardNumber.mount("#clover-card-number");
+      cardDate.mount("#clover-card-date");
+      cardCvv.mount("#clover-card-cvv");
+      postalCode.mount("#clover-card-postal-code");
+
+      cloverRef.current = clover;
+      elementsRef.current = [cardNumber, cardDate, cardCvv, postalCode];
+      setReady(true);
+      setError(null);
+    };
+
+    loadScript().catch((err) => {
+      setError(err instanceof Error ? err.message : "Clover payment setup failed.");
+      setReady(false);
+    });
+
+    return () => {
+      cancelled = true;
+      for (const element of elementsRef.current) {
+        element.unmount?.();
+        element.destroy?.();
+      }
+      elementsRef.current = [];
+      cloverRef.current = null;
+    };
+  }, []);
+
+  useImperativeHandle(ref, () => ({
+    async createToken() {
+      if (!cloverRef.current || !ready) {
+        throw new Error("Clover payment fields are not ready yet.");
+      }
+
+      const result = await cloverRef.current.createToken();
+      if (result.errors || !result.token) {
+        throw new Error(extractCloverError(result.errors));
+      }
+
+      return result.token;
+    },
+  }), [ready]);
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <FormLabel>Card Number</FormLabel>
+        <div id="clover-card-number" className="h-11 rounded-md border border-input bg-background px-3 py-2" />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="space-y-2">
+          <FormLabel>Expiration</FormLabel>
+          <div id="clover-card-date" className="h-11 rounded-md border border-input bg-background px-3 py-2" />
+        </div>
+        <div className="space-y-2">
+          <FormLabel>CVV</FormLabel>
+          <div id="clover-card-cvv" className="h-11 rounded-md border border-input bg-background px-3 py-2" />
+        </div>
+        <div className="space-y-2">
+          <FormLabel>Postal Code</FormLabel>
+          <div id="clover-card-postal-code" className="h-11 rounded-md border border-input bg-background px-3 py-2" />
+        </div>
+      </div>
+      {!ready && !error && (
+        <p className="text-xs text-muted-foreground">Loading secure Clover payment fields...</p>
+      )}
+      {error && (
+        <p className="text-sm text-destructive" data-testid="text-clover-error">
+          {error}
+        </p>
+      )}
+      <p className="text-xs text-muted-foreground">
+        Card details are entered in secure Clover-hosted fields and are not stored by Sawtooth Brewery.
+      </p>
+    </div>
+  );
+});
+CloverPaymentFields.displayName = "CloverPaymentFields";
+
 export default function KegOrderForm() {
   const [step, setStep] = useState<1 | 2 | "done">(1);
   const [orderConfirmation, setOrderConfirmation] = useState<OrderConfirmation | null>(null);
@@ -120,6 +308,7 @@ export default function KegOrderForm() {
   const [kegItems, setKegItems] = useState<KegLineItem[]>([{ beerId: 0, quantity: 1 }]);
   const [kegItemsError, setKegItemsError] = useState<string | null>(null);
   const [addonQtys, setAddonQtys] = useState<Record<AddonId, number>>({ trash_can: 0, pint_glasses: 0, ice: 0 });
+  const cloverPaymentRef = useRef<CloverPaymentHandle>(null);
 
   const beers = useListBeers({ availableOnly: true });
   const authorizePayment = useAuthorizePayment();
@@ -137,9 +326,6 @@ export default function KegOrderForm() {
       pickupTime: "12:00",
       pouringMethod: "",
       notes: "",
-      cardNumber: "",
-      cardExp: "",
-      cardCvv: "",
     },
   });
 
@@ -214,9 +400,14 @@ export default function KegOrderForm() {
     const amountCents = Math.round(total * 100);
 
     try {
+      const cloverSource = await cloverPaymentRef.current?.createToken();
+      if (!cloverSource) {
+        throw new Error("Secure Clover payment fields are not ready yet.");
+      }
+
       const auth = await new Promise<{ cloverPaymentId: string; idempotencyKey: string }>((resolve, reject) => {
         authorizePayment.mutate(
-          { data: { amount: amountCents, source: `tok_mock_${Date.now()}`, idempotencyKey } },
+          { data: { amount: amountCents, source: cloverSource, idempotencyKey } },
           {
             onSuccess: (data) => resolve({ cloverPaymentId: data.cloverPaymentId, idempotencyKey: data.idempotencyKey }),
             onError: (err) => reject(err),
@@ -601,6 +792,14 @@ export default function KegOrderForm() {
               <CardContent className="space-y-4">
                 {beers.isLoading ? (
                   <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading beers...</div>
+                ) : beers.isError ? (
+                  <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                    Keg options could not be loaded. Please refresh or contact Sawtooth Brewery.
+                  </div>
+                ) : (beers.data?.length ?? 0) === 0 ? (
+                  <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                    Keg options are not available yet. Please contact Sawtooth Brewery to place this order.
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     {kegItems.map((item, index) => (
@@ -770,29 +969,7 @@ export default function KegOrderForm() {
                 <CardDescription>A $30 deposit per keg is required to hold your order. Your card will be pre-authorized and charged only when the brewery confirms your order.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <FormField control={orderForm.control} name="cardNumber" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Card Number</FormLabel>
-                    <FormControl><Input placeholder="1234 5678 9012 3456" maxLength={19} {...field} data-testid="input-card-number" /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField control={orderForm.control} name="cardExp" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Expiration</FormLabel>
-                      <FormControl><Input placeholder="MM/YY" maxLength={5} {...field} data-testid="input-card-exp" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={orderForm.control} name="cardCvv" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>CVV</FormLabel>
-                      <FormControl><Input placeholder="123" maxLength={4} {...field} data-testid="input-card-cvv" /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                </div>
+                <CloverPaymentFields ref={cloverPaymentRef} />
                 <Separator />
                 <div className="space-y-1 text-sm">
                   {kegItems.map((item, index) => {

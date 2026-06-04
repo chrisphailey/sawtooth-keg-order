@@ -1,0 +1,16 @@
+[
+  {
+    "name": "Example IPA",
+    "kegSize": "1/2 BBL",
+    "price": 175,
+    "available": true,
+    "notes": "Replace these examples with Sawtooth's real keg menu before seeding production."
+  },
+  {
+    "name": "Example Lager",
+    "kegSize": "1/6 BBL",
+    "price": 95,
+    "available": true,
+    "notes": null
+  }
+]

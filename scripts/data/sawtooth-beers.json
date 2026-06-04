@@ -1,0 +1,142 @@
+[
+  {
+    "name": "Big Woody Light Lager",
+    "kegSize": "1/2 BBL",
+    "price": 148,
+    "available": true,
+    "notes": "15.5 G, 120 pints"
+  },
+  {
+    "name": "Lost River Lager",
+    "kegSize": "1/2 BBL",
+    "price": 148,
+    "available": true,
+    "notes": "15.5 G, 120 pints"
+  },
+  {
+    "name": "Big Mallard Amber Lager",
+    "kegSize": "1/2 BBL",
+    "price": 180,
+    "available": true,
+    "notes": "15.5 G, 120 pints"
+  },
+  {
+    "name": "Cold Springs Italian Pils",
+    "kegSize": "1/2 BBL",
+    "price": 180,
+    "available": true,
+    "notes": "15.5 G, 120 pints"
+  },
+  {
+    "name": "False Summit Amber Ale",
+    "kegSize": "1/2 BBL",
+    "price": 180,
+    "available": true,
+    "notes": "15.5 G, 120 pints"
+  },
+  {
+    "name": "Bloody Good Blood Orange Wheat",
+    "kegSize": "1/2 BBL",
+    "price": 180,
+    "available": true,
+    "notes": "15.5 G, 120 pints"
+  },
+  {
+    "name": "Idahome IPA",
+    "kegSize": "1/2 BBL",
+    "price": 184,
+    "available": true,
+    "notes": "15.5 G, 120 pints"
+  },
+  {
+    "name": "Idahome Hazy IPA",
+    "kegSize": "1/2 BBL",
+    "price": 184,
+    "available": true,
+    "notes": "15.5 G, 120 pints"
+  },
+  {
+    "name": "Stanley Juicy IPA",
+    "kegSize": "1/2 BBL",
+    "price": 184,
+    "available": true,
+    "notes": "15.5 G, 120 pints"
+  },
+  {
+    "name": "Tandem Double IPA",
+    "kegSize": "1/2 BBL",
+    "price": 190,
+    "available": true,
+    "notes": "15.5 G, 120 pints"
+  },
+  {
+    "name": "Big Woody Light Lager",
+    "kegSize": "1/6 BBL",
+    "price": 69,
+    "available": true,
+    "notes": "5.16 G, 40 pints"
+  },
+  {
+    "name": "Lost River Lager",
+    "kegSize": "1/6 BBL",
+    "price": 69,
+    "available": true,
+    "notes": "5.16 G, 40 pints"
+  },
+  {
+    "name": "False Summit Amber Ale",
+    "kegSize": "1/6 BBL",
+    "price": 82,
+    "available": true,
+    "notes": "5.16 G, 40 pints"
+  },
+  {
+    "name": "Bloody Good Blood Orange Wheat",
+    "kegSize": "1/6 BBL",
+    "price": 82,
+    "available": true,
+    "notes": "5.16 G, 40 pints"
+  },
+  {
+    "name": "Big Mallard Amber Lager",
+    "kegSize": "1/6 BBL",
+    "price": 82,
+    "available": true,
+    "notes": "5.16 G, 40 pints"
+  },
+  {
+    "name": "Cold Springs Italian Pils",
+    "kegSize": "1/6 BBL",
+    "price": 82,
+    "available": true,
+    "notes": "5.16 G, 40 pints"
+  },
+  {
+    "name": "Idahome IPA",
+    "kegSize": "1/6 BBL",
+    "price": 85,
+    "available": true,
+    "notes": "5.16 G, 40 pints"
+  },
+  {
+    "name": "Idahome Hazy IPA",
+    "kegSize": "1/6 BBL",
+    "price": 85,
+    "available": true,
+    "notes": "5.16 G, 40 pints"
+  },
+  {
+    "name": "Stanley Juicy IPA",
+    "kegSize": "1/6 BBL",
+    "price": 85,
+    "available": true,
+    "notes": "5.16 G, 40 pints"
+  },
+  {
+    "name": "Tandem Double IPA",
+    "kegSize": "1/6 BBL",
+    "price": 90,
+    "available": true,
+    "notes": "5.16 G, 40 pints"
+  }
+]

@@ -14,6 +14,7 @@
     "build": "pnpm run typecheck && pnpm --filter @workspace/sawtooth-keg run build && pnpm --filter @workspace/api-server run build",
     "start": "pnpm --filter @workspace/api-server run start",
     "db:push": "pnpm --filter @workspace/db run push",
+    "db:seed:beers": "pnpm --filter @workspace/scripts run seed:beers",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm --filter @workspace/sawtooth-keg run typecheck && pnpm --filter @workspace/api-server run typecheck"
   },

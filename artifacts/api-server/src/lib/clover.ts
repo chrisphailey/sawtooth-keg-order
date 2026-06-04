@@ -1,8 +1,8 @@
 import { logger } from "./logger";
 
-const CLOVER_API_BASE = process.env.CLOVER_API_BASE ?? "https://sandbox.dev.clover.com";
-const CLOVER_MERCHANT_ID = process.env.CLOVER_MERCHANT_ID ?? "";
+const CLOVER_API_BASE = process.env.CLOVER_API_BASE ?? "https://scl-sandbox.dev.clover.com";
 const CLOVER_API_TOKEN = process.env.CLOVER_API_TOKEN ?? "";
+const CLOVER_ENABLE_MOCKS = process.env.CLOVER_ENABLE_MOCKS === "true";
 
 interface CloverPaymentResult {
   id: string;
@@ -22,7 +22,11 @@ export async function authorizePayment(opts: {
   source: string;
   idempotencyKey: string;
 }): Promise<CloverPaymentResult> {
-  if (!CLOVER_MERCHANT_ID || !CLOVER_API_TOKEN) {
+  if (!CLOVER_API_TOKEN) {
+    if (!CLOVER_ENABLE_MOCKS) {
+      throw new Error("Clover private API token is not configured.");
+    }
+
     logger.warn("Clover credentials not configured, using mock authorization");
     return {
       id: `mock_auth_${Date.now()}`,
@@ -32,7 +36,7 @@ export async function authorizePayment(opts: {
     };
   }
 
-  const url = `${CLOVER_API_BASE}/v1/merchants/${CLOVER_MERCHANT_ID}/charges`;
+  const url = `${CLOVER_API_BASE}/v1/charges`;
 
   const body = {
     amount: opts.amount,
@@ -73,7 +77,11 @@ export async function capturePayment(opts: {
   amount: number;
   idempotencyKey: string;
 }): Promise<CloverCaptureResult> {
-  if (!CLOVER_MERCHANT_ID || !CLOVER_API_TOKEN) {
+  if (!CLOVER_API_TOKEN) {
+    if (!CLOVER_ENABLE_MOCKS) {
+      throw new Error("Clover private API token is not configured.");
+    }
+
     logger.warn("Clover credentials not configured, using mock capture");
     return {
       id: opts.paymentId,
@@ -82,7 +90,7 @@ export async function capturePayment(opts: {
     };
   }
 
-  const url = `${CLOVER_API_BASE}/v1/merchants/${CLOVER_MERCHANT_ID}/charges/${opts.paymentId}/capture`;
+  const url = `${CLOVER_API_BASE}/v1/charges/${opts.paymentId}/capture`;
 
   const body = { amount: opts.amount };
 
@@ -123,7 +131,11 @@ export async function refundPayment(opts: {
   amount: number;
   idempotencyKey: string;
 }): Promise<CloverRefundResult> {
-  if (!CLOVER_MERCHANT_ID || !CLOVER_API_TOKEN) {
+  if (!CLOVER_API_TOKEN) {
+    if (!CLOVER_ENABLE_MOCKS) {
+      throw new Error("Clover private API token is not configured.");
+    }
+
     logger.warn("Clover credentials not configured, using mock refund");
     return {
       id: `mock_refund_${Date.now()}`,
@@ -132,7 +144,7 @@ export async function refundPayment(opts: {
     };
   }
 
-  const url = `${CLOVER_API_BASE}/v1/merchants/${CLOVER_MERCHANT_ID}/refunds`;
+  const url = `${CLOVER_API_BASE}/v1/refunds`;
 
   const body = {
     charge: opts.paymentId,
